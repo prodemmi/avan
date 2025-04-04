@@ -1,0 +1,250 @@
+package analysis
+
+import (
+	"fmt"
+	"avan/views/components"
+	"avan/internal/db/sqlc"
+)
+
+type AnalysisData struct {
+	TotalMessages    interface{}
+	SuccessMessages  interface{}
+	FailedMessages   interface{}
+	SuccessRate      interface{}
+	ErrorRate        interface{}
+	AvgSendTime      interface{}
+	DatabaseType     string
+	ConsumerCount    int
+	ProvidersStats   map[string]sqlc.GetProviderStatsMysqlRow
+	TimeDistribution map[string]sqlc.GetTimeDistributionMysqlRow
+
+	NodesCount     int
+	HealthyNodes   int
+	UnhealthyNodes int
+}
+
+templ Index(data AnalysisData) {
+	<form action="/dashboard/analysis" method="GET">
+		<div class="flex flex-col gap-4 p-2 dark:bg-gray-800 dark:text-gray-200">
+			<div class="flex justify-between items-center">
+				<b class="text-2xl">Analysis</b>
+				<!-- Filters and Timestamp Range Dropdown with Custom Range -->
+				<div class="p-4 gap-4 flex justify-between items-center">
+					<div class="flex items-baseline gap-4">
+						{{ refreshTimeOptions := []components.SelectOption{
+								{Value: "5", Label: "5 Seconds"},
+								{Value: "10", Label: "10 Seconds"},
+								{Value: "15", Label: "15 Seconds"},
+								{Value: "30", Label: "30 Seconds"},
+								{Value: "60", Label: "1 Minute"},
+								{Value: "120", Label: "2 Minute"},
+								{Value: "450", Label: "5 Minute"},
+							}
+						}}
+						@components.Select("", refreshTimeOptions, "last_hour")
+						<!-- Custom Date Range Picker -->
+						{{ timeRangeOptions := []components.SelectOption{
+								{Value: "last_hour", Label: "Last Hour"},
+								{Value: "last_s_hours", Label: "Last 2 Hours"},
+								{Value: "last_24_hours", Label: "Last 24 Hours"},
+								{Value: "last_7_days", Label: "Last 7 Days"},
+								{Value: "last_30_days", Label: "Last Month"},
+								{Value: "custom", Label: "Custom Range"},
+							}
+						}}
+						@components.Select("timestamp_range", timeRangeOptions, "last_hour")
+						<!-- Custom Date Range Picker -->
+						<div id="custom_range" class="hidden flex gap-4">
+							<input name="start_date" type="date" id="startDate" class="p-2 bg-white rounded dark:bg-gray-600"/>
+							<input name="end_date" type="date" id="endDate" class="p-2 bg-white rounded dark:bg-gray-600"/>
+						</div>
+					</div>
+					@components.SubmitButton("Filter")
+				</div>
+			</div>
+			<!-- First Section with Title -->
+			<div class="p-4 bg-white rounded-lg shadow-md dark:bg-gray-700">
+				<h3 class="text-xl font-bold mb-3">Message Summary</h3>
+				<div class="grid grid-cols-3 gap-4 mt-4 w-full text-sm">
+					<div class="p-4 bg-blue-300 rounded text-center w-full dark:bg-blue-600">
+						<p class="font-semibold text-black dark:text-white">Total</p>
+						<p class="font-bold">{ fmt.Sprint(data.TotalMessages) }</p>
+					</div>
+					<div class="p-4 bg-green-300 rounded text-center w-full dark:bg-green-600">
+						<p class="font-semibold text-black dark:text-white">Success</p>
+						<p class="font-bold">{ fmt.Sprint(data.SuccessMessages) }</p>
+					</div>
+					<div class="p-4 bg-red-300 rounded text-center w-full dark:bg-red-600">
+						<p class="font-semibold text-black dark:text-white">Failed</p>
+						<p class="font-bold">{ fmt.Sprint(data.FailedMessages) }</p>
+					</div>
+					<div class="p-4 bg-blue-100 rounded text-center w-full dark:bg-blue-400">
+						<p class="font-semibold text-black dark:text-white">Avg Send Time</p>
+						<p class="font-bold">{ fmt.Sprintf("%s", data.AvgSendTime) }s</p>
+					</div>
+					<div class="p-4 bg-green-100 rounded text-center w-full dark:bg-green-400">
+						<p class="font-semibold text-black dark:text-white">Success Rate</p>
+						<p class="font-bold">{ fmt.Sprintf("%v%%", data.SuccessRate) }</p>
+					</div>
+					<div class="p-4 bg-red-100 rounded text-center w-full dark:bg-red-400">
+						<p class="font-semibold text-black dark:text-white">Error Rate</p>
+						<p class="font-bold">{ fmt.Sprintf("%.2f%%", data.ErrorRate) }</p>
+					</div>
+				</div>
+			</div>
+			<!-- Providers Statistics Table -->
+			<div class="p-4 flex w-full gap-4 bg-white rounded-lg shadow-md dark:bg-gray-700">
+				<div class="w-full mt-3">
+					<h3 class="text-xl font-bold mb-3">Providers Statistics</h3>
+					<div class="overflow-x-auto">
+						<table class="min-w-full table-auto border-collapse dark:bg-gray-600">
+							<thead>
+							<tr class="bg-gray-200 dark:bg-gray-700">
+								<th class="px-3 py-2 text-start font-bold">Provider</th>
+								<th class="px-3 py-2 text-center font-bold">Total</th>
+								<th class="px-3 py-2 text-center font-bold">Success</th>
+								<th class="px-3 py-2 text-center font-bold">Failed</th>
+								<th class="px-3 py-2 text-center font-bold">Success Rate</th>
+								<th class="px-3 py-2 text-center font-bold">Error Rate</th>
+								<th class="px-3 py-2 text-end font-bold">Avg Send Time</th>
+							</tr>
+							</thead>
+							<tbody>
+							for provider, value := range data.ProvidersStats {
+							<tr>
+								<td class="p-2 text-start">{ fmt.Sprint(provider) }</td>
+								<td class="p-2 text-center">{ fmt.Sprint(value.Total) }</td>
+								<td class="p-2 text-center bg-green-100 dark:bg-green-600">{ fmt.Sprint(value.Success) }</td>
+								<td class="p-2 text-center bg-red-100 dark:bg-red-600">{ fmt.Sprint(value.Failed) }</td>
+								<td class="p-2 text-center bg-green-100 dark:bg-green-600">{ fmt.Sprintf("%.2f%%", value.SuccessRate) }</td>
+								<td class="p-2 text-center bg-red-100 dark:bg-red-600">{ fmt.Sprintf("%.2f%%", value.ErrorRate) }</td>
+								<td class="p-2 text-end">{ fmt.Sprintf("%s", value.AvgSendTime) }s</td>
+							</tr>
+							}
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<!-- Providers Usage Pie Chart -->
+				<div class="flex flex-col w-1/2 mt-3">
+					<h3 class="text-xl font-bold mb-3">Providers Usage</h3>
+					<div>
+						<canvas id="providersChart"></canvas>
+					</div>
+				</div>
+			</div>
+			<!-- Message Distribution Over Time -->
+			<div class="p-4 bg-white rounded-lg shadow-md dark:bg-gray-700">
+				<div class="flex justify-between">
+					<h3 class="text-xl font-bold mb-3">Message Distribution Over Time</h3>
+					<div class="flex justify-between gap-4">
+						<div class="flex items-center w-full gap-2">
+							{{ options := []components.SelectOption{
+							{Value: "0", Label: "Success"},
+							{Value: "2", Label: "Failed"},
+							}
+							}}
+							<label for="date_range">
+								Type
+							</label>
+							@components.Select("type", options, "0")
+						</div>
+						@components.SubmitButton("Filter")
+					</div>
+				</div>
+				<canvas id="timeDistributionChart" class="w-full h-48"></canvas>
+			</div>
+			<!-- Service Health Section -->
+			<div class="p-4 bg-white rounded-lg shadow-md mt-4 dark:bg-gray-700">
+				<b class="text-xl font-bold mb-3">Service Health</b>
+				<div class="grid grid-cols-3 gap-4 mt-4 w-full text-sm">
+					<div class="p-4 bg-gray-300 rounded text-center w-full dark:bg-gray-600">
+						<p class="font-semibold text-black dark:text-white">Total Nodes</p>
+						<p class="font-bold">{ fmt.Sprint(data.NodesCount) }</p>
+					</div>
+					<div class="p-4 bg-green-300 rounded text-center w-full dark:bg-green-600">
+						<p class="font-semibold text-black dark:text-white">Healthy Nodes</p>
+						<p class="font-bold">{ fmt.Sprint(data.HealthyNodes) }</p>
+					</div>
+					<div class="p-4 bg-red-300 rounded text-center w-full dark:bg-red-600">
+						<p class="font-semibold text-black dark:text-white">Unhealthy Nodes</p>
+						<p class="font-bold">{ fmt.Sprint(data.UnhealthyNodes) }</p>
+					</div>
+				</div>
+			</div>
+			<!-- System Status -->
+			<div class="bg-white shadow-md rounded-lg p-6 mt-4 dark:bg-gray-700">
+				<h2 class="text-xl font-bold mb-4">System Status</h2>
+				<div class="grid grid-cols-2 gap-4">
+					@SystemStatusCard("Kafka", "Connected", "green")
+					@SystemStatusCard("Consumers", fmt.Sprintf("Running (%d active)", data.ConsumerCount), "green")
+					@SystemStatusCard(fmt.Sprintf("Database (%s)", data.DatabaseType), "Connected", "green")
+					@SystemStatusCard("Redis", "Connected", "green")
+				</div>
+			</div>
+			<!-- Hidden div to pass data -->
+			<div id="data" data-value={ templ.JSONString(data) }></div>
+		</div>
+	</form>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script>
+	document.addEventListener("DOMContentLoaded", function () {
+		const dataElement = document.getElementById("data");
+		const data = JSON.parse(dataElement.getAttribute("data-value"));
+
+		const timeCtx = document.getElementById('timeDistributionChart').getContext('2d');
+		const providersCtx = document.getElementById('providersChart').getContext('2d');
+
+		// Time Distribution Bar Chart
+		const datasets = Object.keys(data.TimeDistribution).map((provider, i) => ({
+			label: provider,
+			data: Object.values(data.TimeDistribution[provider]),
+			backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'][i]
+		}));
+
+		new Chart(timeCtx, {
+			type: 'bar',
+			data: {
+				labels: Object.keys(data.TimeDistribution[Object.keys(data.TimeDistribution)[0]]),
+				datasets: datasets
+			},
+			options: {
+				scales: {
+					y: { beginAtZero: true }
+				}
+			}
+		});
+
+		// Providers Pie Chart
+		new Chart(providersCtx, {
+			type: 'pie',
+			data: {
+				labels: Object.keys(data.ProvidersStats),
+				datasets: [{
+					data: Object.values(data.ProvidersStats).map(value => value.total),
+					backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+				}]
+			}
+		});
+
+		const timestampRangeSelect = document.getElementById('timestamp_range');
+		const customRange = document.getElementById('custom_range');
+
+		// Show custom date range inputs when "Custom Range" is selected
+		timestampRangeSelect.addEventListener('change', function () {
+			if (timestampRangeSelect.value === 'custom') {
+				customRange.classList.remove('hidden');
+			} else {
+				customRange.classList.add('hidden');
+			}
+		});
+	});
+</script>
+}
+
+templ SystemStatusCard(service string, status string, color string) {
+	<div class="bg-white p-4 rounded-lg flex justify-between dark:bg-gray-700">
+		<span class="font-bold">{ service }</span>
+		<span class={ "text-" + color + "-500" }>{ status }</span>
+	</div>
+}

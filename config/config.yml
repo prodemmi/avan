@@ -1,0 +1,145 @@
+# Application configuration file for Avan message-sending app
+
+# Authentication settings
+# Token expiration time in seconds (default to 48 hours)
+auth.token.expire_time: 172800
+
+# Server configuration
+# Application running port (default is 9090)
+# Domain for the server (set to your server's domain)
+server.port: 9090
+server.domain: localhost
+
+# Admin credentials
+# Admin email for admin login
+admin.email: prodemmi@gmail.com
+# Admin password (consider using secure storage or environment variables)
+admin.password: root
+
+# Default workspace settings
+# When the app is running for first time, a workspace creates with this name
+workspace.default.name: default
+
+# Database configuration
+# Supported database types: postgres, mysql, sqlite
+database.type: ${DB_TYPE}
+# Name of the database
+database.name: ${DB_NAME}
+# Database host address
+database.host: ${DB_HOST}
+# Database port number
+database.port: ${DB_PORT}
+# Database username
+database.user: ${DB_USER}
+# Database password (consider using secure storage)
+database.password: ${DB_PASSWORD}
+
+# Redis configuration
+# Redis server host address (default is localhost)
+redis.host: localhost
+# Redis server port number (default is 6379)
+redis.port: 6379
+# Redis password (empty means no password)
+redis.password: ""
+# Redis database index (default is 0)
+redis.db: 0
+
+# kafka configuration
+# kafka brokers list
+kafka.brokers:
+  - localhost:9092
+# kafka topic name
+kafka.topic: avan_messages
+
+# Number of Kafka consumers per service.
+# Default is 1. Increase for higher processing speed.
+# Note: A high value may impact server performance.
+# Cannot be set to 0.
+kafka.consumer.count: 1
+
+# List of other clients to high scaling the service.
+# Each node discovered and communicated by gossip protocol.
+# Note: don't add this host.
+hosts:
+
+# Default Providers configuration
+providers:
+# Uncomment and fill in the values if you want to add and use default providers for sending messages
+# You could define multiple values for each provider based on your need.
+# Provider type (email, sms, telegram, slack and webhook)
+# Email provider configuration
+  - type: email
+# Provider name
+    name: "Email Provider"
+# SMTP server host
+    smtp_host: smtp.example.com
+# SMTP server port (587 is common for TLS)
+    smtp_port: 587
+# SMTP username (your email provider username)
+    username: user@example.com
+# SMTP password (consider using secure storage)
+    password: password
+# Email address for sending emails
+    from_email: no-reply@example.com
+
+# SMS provider configuration
+# Uncomment and fill in the values if you want to use SMS provider for sending messages
+# Provider type (sms)
+  - type: sms
+# Provider name
+    name: "SMS Provider"
+# SMS provider API endpoint
+    url: https://api.smsprovider.com/send
+# HTTP method for sending SMS (GET, POST, etc.)
+    method: POST
+
+# Telegram provider configuration
+# Uncomment and fill in the values if you want to use Telegram bot for sending messages
+# Provider type (telegram)
+  - type: telegram
+# Provider name
+    name: "Telegram Provider"
+# Telegram bot token
+    bot_token: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+
+# Slack provider configuration
+# Uncomment and fill in the values if you want to use Slack webhook for sending messages
+# Provider type (slack)
+#  - type: slack
+# Provider name
+#    name: "Slack Provider"
+# Slack incoming webhook URL
+#    webhook_url: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+
+# Webhook provider configuration
+# Uncomment and fill in the values if you want to use Webhook for sending messages
+# Provider type (webhook)
+#  - type: webhook
+# Provider name
+#    name: "Webhook Provider"
+# Webhook endpoint URL
+#    url: https://example.com/webhook
+
+# Logging configuration
+# Directory for storing log files
+logs.directory: /var/log/avan/
+# Log level: debug, info, warn, error, fatal
+logs.level: info
+# Log format: text or json
+logs.format: text
+# Maximum size of log file before rotation
+logs.rotation.size: 10MB
+# Maximum number of rotated log files to keep
+logs.rotation.max_files: 5
+# Compress rotated log files
+logs.rotation.compress: true
+# File for error logs
+logs.error_file: /var/log/avan/error.log
+# File for access logs
+logs.access_file: /var/log/avan/access.log
+
+# Metrics configuration
+# Enable or disable metrics collection
+metrics.enabled: true
+# Endpoint for exposing app metrics
+metrics.endpoint: /metrics

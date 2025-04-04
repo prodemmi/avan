@@ -1,0 +1,51 @@
+package edit_config_forms
+
+import (
+	"avan/internal/db/sqlc"
+	"avan/views/components"
+)
+
+templ EmailForm(config sqlc.EmailConfig) {
+	<div class="flex flex-col gap-4">
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="smtp_host">
+				SMTP Host
+			</label>
+			@components.Input("smtp_host", "Enter SMTP host", config.SmtpHost)
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="smtp_port">
+				SMTP Port
+			</label>
+			@components.NumberInput("smtp_port", "Enter SMTP port", &config.SmtpPort)
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="username">
+				Username
+			</label>
+			{{if config.Username == nil {
+	empty := ""
+	config.Username = &empty
+}
+			}}
+			@components.OptionalInput("username", "Enter SMTP username", *config.Username)
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="password">
+				Password
+			</label>
+			{{if config.Password == nil {
+	empty := ""
+	config.Password = &empty
+}
+			}}
+			@components.OptionalPasswordInput("password", "Enter SMTP password", *config.Password)
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="from_email">
+				From Email
+			</label>
+			@components.Input("from_email", "Enter from email address", config.FromEmail)
+		</div>
+	</div>
+}

@@ -1,0 +1,63 @@
+package components
+
+import "fmt"
+
+type PageData struct {
+	Route       string
+	CurrentPage int32
+	MaxResults  int32
+	Bucket      int32
+}
+
+templ Pagination(page PageData) {
+	<div class="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 mt-4 px-4 py-3 sm:px-6">
+		<div>
+			<p class="text-sm text-gray-700 dark:text-gray-300">
+				Showing
+				<span class="font-medium">{ fmt.Sprint(page.Bucket * page.CurrentPage + 1) }</span>
+				to
+				<span class="font-medium">
+					{{ max := page.Bucket*page.CurrentPage + page.Bucket }}
+					if max >= page.MaxResults {
+						{ fmt.Sprint(page.MaxResults) }
+					} else {
+						{ fmt.Sprint(max) }
+					}
+				</span>
+				of
+				<span class="font-medium">{ fmt.Sprint(page.MaxResults) }</span>
+				results
+			</p>
+		</div>
+		<div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+			<div>
+				<nav class="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
+					{{ pageCount := page.MaxResults/page.Bucket + 1 }}
+					{{goToRoute := func(pg int32) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/dashboard/%s?page=%d", page.Route, pg))
+}
+					}}
+					<a href="#" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-gray-300 dark:ring-gray-600 ring-inset hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0">
+						if page.CurrentPage > 0 {
+							<a href={ goToRoute(page.CurrentPage - 1) }>
+								<span class="sr-only">Previous</span>
+							</a>
+						}
+					</a>
+					for i := range pageCount {
+						if page.CurrentPage == i {
+							<a aria-current="page" class="relative z-10 inline-flex items-center bg-indigo-600 dark:bg-indigo-500 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400">{ fmt.Sprint(i + 1) }</a>
+						} else {
+							<a href={ goToRoute(i) } class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-300 ring-1 ring-gray-300 dark:ring-gray-600 ring-inset hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0">{ fmt.Sprint(i + 1) }</a>
+						}
+					}
+					if page.CurrentPage < pageCount - 1 {
+						<a href={ goToRoute(page.CurrentPage + 1) }>
+							<span class="sr-only">Next</span>
+						</a>
+					}
+				</nav>
+			</div>
+		</div>
+	</div>
+}

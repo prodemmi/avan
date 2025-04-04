@@ -1,0 +1,92 @@
+package components
+
+import (
+	"avan/internal/table"
+	"fmt"
+	"reflect"
+)
+
+type TableResolve func(row map[string]any, header string) any
+
+type TableAction func(map[string]any) (string, string, string)
+
+func GetValue(value any) string {
+	if value == nil {
+		return ""
+	}
+
+	v := reflect.ValueOf(value)
+
+	// Handle pointers
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return ""
+		}
+		v = v.Elem()
+	}
+
+	// Convert to string based on the actual type
+	switch v.Kind() {
+	case reflect.String:
+		return v.String()
+	case reflect.Bool:
+		return fmt.Sprintf("%t", v.Bool())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return fmt.Sprintf("%d", v.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return fmt.Sprintf("%d", v.Uint())
+	case reflect.Float32, reflect.Float64:
+		return fmt.Sprintf("%f", v.Float())
+	default:
+		return fmt.Sprintf("%v", v.Interface())
+	}
+}
+
+templ Table(rows []map[string]any, headers []string, actions []TableAction, resolver TableResolve, page PageData) {
+	<div class="relative overflow-x-auto mt-4" style="height: 72dvh">
+		<table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+			<thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
+				<tr>
+					for _, header := range headers {
+						<th scope="col" class="px-6 py-3">{ table.ToTitleCase(header) }</th>
+					}
+					if len(actions) > 0 {
+						<th scope="col" class="px-6 py-3">Actions</th>
+					}
+				</tr>
+			</thead>
+			<tbody>
+				for _, row := range rows {
+					<tr class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+						for _, header := range headers {
+							<td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+								if resolver != nil {
+									@templ.Raw(GetValue(resolver(row, header)))
+								} else {
+									@templ.Raw(GetValue(row[header]))
+								}
+							</td>
+						}
+						if len(actions) > 0 {
+							<td scope="row" class="flex gap-2 px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+								for _, action := range actions {
+									{{ name, url, method := action(row) }}
+									if len(name) > 0 && len(url) > 0 && len(method) > 0 {
+										<form action={ templ.URL(url) } method={ method } style="margin: 0">
+											<button type="submit" class="cursor-pointer text-blue-500 underline dark:text-blue-400">
+												{ name }
+											</button>
+										</form>
+									}
+								}
+							</td>
+						}
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+	if page.MaxResults > page.Bucket {
+		@Pagination(page)
+	}
+}

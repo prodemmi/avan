@@ -1,0 +1,15 @@
+package components
+
+templ UrlInput(name, placeholder, defaultValue string) {
+	<input
+		class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+		id={ name }
+		name={ name }
+		value={ defaultValue }
+		type="url"
+		required
+		placeholder={ placeholder }
+		pattern="https?://.*"
+		title="Please enter a valid URL (e.g. https://example.com)"
+	/>
+}

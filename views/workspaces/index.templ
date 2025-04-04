@@ -1,0 +1,59 @@
+package workspaces
+
+import (
+	"avan/internal/db/sqlc"
+	"avan/internal/table"
+	"avan/views/components"
+	"fmt"
+)
+
+templ Index(workspaceList []sqlc.Workspace, page components.PageData) {
+	<div class="flex justify-between">
+		<b>Workspaces</b>
+		if len(workspaceList) > 0 {
+			@components.Button("Create", "/dashboard/workspaces/create")
+		} else {
+			<div></div>
+		}
+	</div>
+	if len(workspaceList) == 0 || workspaceList == nil {
+		{{ btn := components.Button("Create", "/dashboard/workspaces/create") }}
+		@components.EmptyState("No workspaces has created", "Get started by creating a new workspace.", btn)
+	} else {
+		{{ workspaces := table.ToTableMapList(workspaceList) }}
+		{{selectAction := func(row map[string]any) (string, string, string) {
+	if row["IsDefault"].(int64) == 0 {
+		return "Set Default", fmt.Sprintf("/dashboard/workspaces/%d/setDefault", row["ID"]), "POST"
+	}
+	return "", "", ""
+}
+		}}
+		{{editAction := func(row map[string]any) (string, string, string) {
+	if row["ID"].(int64) != 1 && row["IsDefault"].(int64) != 1 {
+		return "Edit", fmt.Sprintf("/dashboard/workspaces/%d/edit", row["ID"]), "GET"
+	}
+	return "", "", ""
+}
+		}}
+		{{deleteAction := func(row map[string]any) (string, string, string) {
+	if row["ID"].(int64) != 1 && row["IsDefault"].(int64) != 1 {
+		return "Delete", fmt.Sprintf("/dashboard/workspaces/%d/delete", row["ID"]), "POST"
+	}
+	return "", "", ""
+}
+		}}
+		{{ actions := []components.TableAction{selectAction, editAction, deleteAction} }}
+		{{resolver := func(row map[string]any, header string) any {
+	if header == "IsDefault" {
+		if row["IsDefault"].(int64) == 1 {
+			return `<i class="ri-checkbox-circle-fill text-green-500"></i>`
+		} else {
+			return `<i class="ri-close-circle-fill text-red-500"></i>`
+		}
+	}
+	return row[header]
+}
+		}}
+		@components.Table(workspaces, []string{"ID", "Name", "IsDefault"}, actions, resolver, page)
+	}
+}

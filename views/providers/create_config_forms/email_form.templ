@@ -1,0 +1,41 @@
+package create_config_forms
+
+import "avan/views/components"
+
+templ EmailForm() {
+	<div class="flex flex-col gap-4">
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="smtp_host">
+				SMTP Host
+			</label>
+			@components.Input("smtp_host", "Enter SMTP host", "")
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="smtp_port">
+				SMTP Port
+			</label>
+			@components.NumberInput("smtp_port", "Enter SMTP port", nil)
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="username">
+				Username
+			</label>
+			@components.OptionalInput("username", "Enter SMTP username", "")
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="password">
+				Password
+			</label>
+			@components.OptionalPasswordInput("password", "Enter SMTP password", "")
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="from_email">
+				From Email
+			</label>
+			@components.Input("from_email", "Enter from email address", "")
+		</div>
+		<div class="mt-4" style="width: 20dvw">
+			@components.SubmitButton("Create Email Config")
+		</div>
+	</div>
+}

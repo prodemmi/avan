@@ -1,0 +1,23 @@
+package layout
+
+import "fmt"
+
+type MenuItem struct {
+	Title string
+	Url   string
+}
+
+templ MenuBar(base string, items []MenuItem) {
+	if len(items) > 0 {
+		<header class="bg-secondary text-white p-4">
+			<div class="flex gap-2">
+				if len(base) > 0 {
+					<b>{ base } :</b>
+				}
+				for _, item := range items {
+					<a href={ templ.URL(fmt.Sprintf("/dashboard/%s", item.Url)) } class="text-red underline">{ item.Title }</a>
+				}
+			</div>
+		</header>
+	}
+}

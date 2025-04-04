@@ -1,0 +1,94 @@
+package edit_config_forms
+
+import (
+	"avan/internal/db/sqlc"
+	"avan/views/components"
+	"strconv"
+)
+
+templ SmsForm(config sqlc.SmsConfig) {
+	<div class="flex flex-col gap-4">
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="url">
+				URL
+			</label>
+			@components.UrlInput("sms_url", "Enter provider url", config.Url)
+			<div id="url-data"></div>
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="method">
+				Method
+			</label>
+			{{
+	options := []components.SelectOption{
+		{Value: "0", Label: "GET"},
+		{Value: "1", Label: "POST"},
+	}
+			}}
+			@components.Select("sms_method", options, strconv.Itoa(int(config.Method)))
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_is_auth_in_header">
+				Authenticate in Header
+			</label>
+			{{
+	isAuthInHeader := false
+	if config.IsAuthInHeader != nil {
+		isAuthInHeader = *config.IsAuthInHeader
+	}
+			}}
+			@components.Checkbox("sms_is_auth_in_header", isAuthInHeader)
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_auth_token_key">
+				Auth Token Key
+			</label>
+			{{
+	authTokenKey := ""
+	if config.AuthTokenKey != nil {
+		authTokenKey = *config.AuthTokenKey
+	}
+			}}
+			@components.OptionalInput("sms_auth_token_key", "Enter token key", authTokenKey)
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_auth_token_value">
+				Auth Token Value
+			</label>
+			{{
+	authTokenValue := ""
+	if config.AuthTokenValue != nil {
+		authTokenValue = *config.AuthTokenValue
+	}
+			}}
+			@components.OptionalPasswordInput("sms_auth_token_value", "Enter token value", authTokenValue)
+		</div>
+	</div>
+	<script>
+        function validateUrl(url) {
+            return /^[a-z]+:\/\//i.test(url);
+        }
+
+        const urlInput = document.getElementById("url")
+        if (urlInput) {
+            urlInput.oninput = (e) => {
+                const urlData = document.getElementById("url-data");
+                if (urlInput) {
+                    let content = ""
+                    const value = e.target.value
+                    if (validateUrl(value)) {
+                        const searchParams = new URLSearchParams(e.target.value);
+                        searchParams.forEach((value, key) => {
+                            if (!key.startsWith("http"))
+                                content += `<div><b>${key}</b>: ${value}</div>`
+                        })
+                        urlData.innerHTML= content
+                    } else {
+                        content = `<div class="text-red-500">Not valid url</div>`
+                        urlData.innerHTML= content
+                    }
+                }
+            }
+        }
+    </script>
+}

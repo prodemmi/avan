@@ -1,0 +1,57 @@
+package templates
+
+import (
+	"avan/internal/db/sqlc"
+	"avan/views/components"
+	"fmt"
+)
+
+templ Edit(template sqlc.Template) {
+	<div class="flex justify-between">
+		<b>Edit Template { template.Name }</b>
+		<div></div>
+	</div>
+	<div class="w-full">
+		<form
+			class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+			action={ templ.URL(fmt.Sprintf(
+        "/dashboard/templates/%d/edit", template.ID)) }
+			method="POST"
+		>
+			<div class="mb-4">
+				<label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+					Name
+				</label>
+				@components.Input("name", "Template name", template.Name)
+			</div>
+			<div class="mb-4">
+				<label class="block text-gray-700 text-sm font-bold mb-2" for="content">
+					Content
+				</label>
+				@components.Textarea("content", "Template content", template.Content)
+				<p id="values"></p>
+			</div>
+			@components.SubmitButton("Update Template")
+		</form>
+	</div>
+	<script>
+        window.onload = function (e) {
+            const content = document.getElementById("content");
+            if (content) {
+                function updateValues(value) {
+                    const values = document.getElementById("values");
+                    const matches = value.match(/\$\w+/g);
+                    if (matches?.length > 0) {
+                        const innerHTML = "Values: <br>" + matches.map((val) => `<b>${val}</b>`).join("<br>");
+                        values.innerHTML = innerHTML;
+                    } else {
+                        values.innerHTML = "";
+                    }
+                }
+
+                updateValues(content.value)
+                content.addEventListener("input", () => updateValues(content.value));
+            }
+        };
+    </script>
+}

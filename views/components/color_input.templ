@@ -1,0 +1,12 @@
+package components
+
+templ ColorInput(name, defaultValue string) {
+	<input
+		class="shadow appearance-none border rounded text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+		id={ name }
+		name={ name }
+		value={ defaultValue }
+		type="color"
+		required
+	/>
+}

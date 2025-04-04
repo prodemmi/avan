@@ -1,0 +1,64 @@
+package layout
+
+templ Layout(content templ.Component, baseMenu string, menuItems []MenuItem) {
+	{{ theme := ctx.Value("theme").(string)}}
+	<html lang="en" class={ theme }>
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>Avan</title>
+			<link href="/public/styles.css" rel="stylesheet"/>
+			<link href="/public/styles.css" rel="stylesheet"/>
+			<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
+		</head>
+		<body class="flex bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200 w-dvw overflow-hidden">
+			@Sidebar()
+			<div class="flex-col h-full bg-gray-100 dark:bg-gray-900" style="width: 84dvw">
+				@MenuBar(baseMenu, menuItems)
+				<main class="overflow-y-auto h-dvh p-6">
+					if messages, ok := ctx.Value("messages").([]string); ok {
+						for _, message := range messages {
+							<div class="mb-4" role="alert">
+								<div class="bg-blue-500 dark:bg-blue-700 text-white font-bold rounded-t px-4 py-2">
+									Info
+								</div>
+								<div class="border border-t-0 border-blue-400 dark:border-blue-600 rounded-b bg-blue-100 dark:bg-blue-950 px-4 py-3 text-blue-700 dark:text-blue-300">
+									<p>{ message }</p>
+								</div>
+							</div>
+						}
+					}
+					if errorMessages, ok := ctx.Value("errors").([]string); ok {
+						for _, errorMessage := range errorMessages {
+							<div class="mb-4" role="alert">
+								<div class="bg-red-500 dark:bg-red-700 text-white font-bold rounded-t px-4 py-2">
+									Error
+								</div>
+								<div class="border border-t-0 border-red-400 dark:border-red-600 rounded-b bg-red-100 dark:bg-red-950 px-4 py-3 text-red-700 dark:text-red-300">
+									<p>{ errorMessage }</p>
+								</div>
+							</div>
+						}
+					}
+					@content
+				</main>
+			</div>
+			<script>
+				document.addEventListener("DOMContentLoaded", function () {
+					const scrollContainer = document.getElementsByTagName("main")[0];
+					// Restore scroll position if it exists
+					const scrollPosition = sessionStorage.getItem("scrollPosition");
+					if (scrollPosition) {
+						scrollContainer.scrollTo(0, parseInt(scrollPosition, 10));
+					}
+
+					scrollContainer.addEventListener("scrollend", function (e) {
+						sessionStorage.setItem("scrollPosition", e.target.scrollTop);
+					})
+				});
+			</script>
+
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js" integrity="sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		</body>
+	</html>
+}

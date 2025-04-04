@@ -1,0 +1,38 @@
+package api_keys
+
+import "avan/views/components"
+
+templ Create() {
+	<div class="flex justify-between">
+		<b>Create Api Key</b>
+		<div></div>
+	</div>
+	<div class="w-full">
+		<form class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 dark:bg-gray-900" action="/dashboard/api-keys" method="POST">
+			<div class="mb-4">
+				<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-100" for="name">
+					Name
+				</label>
+				@components.Input("name", "Api Key name", "")
+			</div>
+			<div class="mb-4">
+				<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-100" for="expire_at">
+					Expire At
+				</label>
+				{{
+	options := []components.SelectOption{
+		{Value: "0", Label: "1 Hour"},
+		{Value: "1", Label: "4 Hours"},
+		{Value: "2", Label: "1 Day"},
+		{Value: "3", Label: "7 Days"},
+		{Value: "4", Label: "1 Month"},
+		{Value: "5", Label: "3 Months"},
+		{Value: "6", Label: "No Expire"},
+	}
+				}}
+				@components.Select("expire_at", options, "0")
+			</div>
+			@components.SubmitButton("Create")
+		</form>
+	</div>
+}

@@ -1,0 +1,194 @@
+package messages
+
+import (
+	"avan/internal/db/sqlc"
+	"avan/internal/table"
+	"avan/views/components"
+	"fmt"
+	"slices"
+)
+
+func TemplateFilter(templates []sqlc.Template) templ.Component {
+	options := []components.SelectOption{
+		{Value: "", Label: "None"},
+	}
+
+	for _, template := range templates {
+		options = append(options, components.SelectOption{
+			Value: fmt.Sprint(template.ID),
+			Label: template.Name,
+		})
+	}
+
+	return components.Select("template", options, "")
+}
+
+func StatusFilter() templ.Component {
+	options := []components.SelectOption{
+		{Value: "", Label: "None"},
+		{Value: "0", Label: "Success"},
+		{Value: "1", Label: "Failed"},
+	}
+	return components.Select("status", options, "")
+}
+
+func ProvidersFilter(providers []sqlc.Provider) templ.Component {
+	options := []components.SelectOption{
+		{Value: "", Label: "All"},
+	}
+
+	for _, provider := range providers {
+		options = append(options, components.SelectOption{
+			Value: fmt.Sprint(provider.ID),
+			Label: provider.Name,
+		})
+	}
+
+	return components.Select("provider", options, "")
+}
+
+func RecipientFilter() templ.Component {
+	return components.OptionalInput("recipient", "", "")
+}
+
+func ContentFilter() templ.Component {
+	return components.OptionalInput("content", "", "")
+}
+
+templ FilterIcon() {
+	<i class="ri-filter-fill"></i>
+}
+
+templ Index(messageList []sqlc.Message, templateList []sqlc.Template, providerList []sqlc.Provider, page components.PageData) {
+	<div class="flex justify-between">
+		<b>Messages</b>
+		<div class="flex gap-4" style="width: 18vw;min-width: 180px;">
+			@ProvidersFilter(providerList)
+			@components.IconButton("filter", FilterIcon())
+		</div>
+	</div>
+	<div id="filter-popover" class="flex gap-4">
+		<form action="/dashboard/messages" method="GET">
+			<input id="hprovider" name="provider" type="hidden" value=""/>
+			<input id="page" name="page" type="hidden" value="0"/>
+			<label for="template">
+				<div>By Template</div>
+				@TemplateFilter(templateList)
+			</label>
+			<label for="status">
+				<div>By Status</div>
+				@StatusFilter()
+			</label>
+			<label for="recipient">
+				<div>By Recipient</div>
+				@RecipientFilter()
+			</label>
+			<label for="content">
+				<div>By Content</div>
+				@ContentFilter()
+			</label>
+			@components.SubmitButton("Filter")
+		</form>
+	</div>
+	if len(messageList) == 0 || messageList == nil {
+		<div class="text-center mt-32">No message has sent</div>
+	} else {
+		{{ messages := table.ToTableMapList(messageList) }}
+		{{templateAction := func(row map[string]any) (string, string, string) {
+	if row["TemplateID"] != nil {
+		if templateID, ok := row["TemplateID"].(*int64); ok {
+			if templateID != nil {
+				return "Show Template", fmt.Sprintf("/dashboard/templates/%d/edit", *templateID), "GET"
+			}
+		}
+	}
+	return "", "", ""
+}
+		}}
+		{{providerAction := func(row map[string]any) (string, string, string) {
+	if providerID, ok := row["ProviderID"].(int64); ok {
+		return "Show Provider", fmt.Sprintf("/dashboard/providers/%d/edit", providerID), "GET"
+	}
+	return "", "", ""
+}
+		}}
+		{{ actions := []components.TableAction{templateAction, providerAction} }}
+		{{resolver := func(row map[string]any, header string) any {
+	if header == "ID" {
+		return row[header]
+	}
+	if header == "Provider Type" {
+		idx := slices.IndexFunc(providerList, func(c sqlc.Provider) bool { return c.ID == row["ProviderID"].(int64) })
+		return table.GetProviderConfigType(providerList[idx].ConfigType)
+	}
+	if header == "Status" {
+		val := row[header].(int64)
+		if val == 0 {
+			return `<div class="text-green-500">Success</div>`
+		} else if val == 1 {
+			return `<div class="text-yellow-500">Pending</div>`
+		} else if val == 2 {
+			return `<div class="text-red-500">Error</div>`
+		}
+	}
+	return fmt.Sprintf(`<div class="truncate" style="width: 140px">%s</div>`, row[header])
+}
+		}}
+		@components.Table(messages, []string{"ID", "Content", "Recipient", "Provider Type", "Status"}, actions, resolver, page)
+	}
+	<script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const provider = document.getElementById("provider");
+            const filterButton = document.getElementById("filter");
+            const popover = document.getElementById("filter-popover");
+            const hprovider = document.getElementById("hprovider");
+            const template = document.getElementById("template");
+            const status = document.getElementById("status");
+            const recipient = document.getElementById("recipient");
+            const content = document.getElementById("content");
+            const page = document.getElementById("page");
+
+			const url = new URL(window.location);
+
+            popover.style.position = "absolute";
+            popover.style.top = "50px";
+            popover.style.right = "10px";
+            popover.style.padding = "10px";
+            popover.style.border = "1px solid #ccc";
+            popover.style.background = "#fff";
+            popover.style.zIndex = 200;
+            popover.style.display = "none";
+
+			provider.value = url.searchParams.get("provider") ?? "";
+			template.value = url.searchParams.get("template");
+			status.value = url.searchParams.get("status");
+			recipient.value = url.searchParams.get("recipient");
+			content.value = url.searchParams.get("content");
+			page.value = url.searchParams.get("page");
+
+            filterButton.addEventListener("click", function (event) {
+                event.stopPropagation();
+                popover.style.display = popover.style.display === "none" ? "block" : "none";
+            });
+
+            document.addEventListener("click", function (event) {
+                if (!popover.contains(event.target) && event.target !== filterButton) {
+                    popover.style.display = "none";
+                }
+            });
+
+            provider.addEventListener("change", function (event) {
+				const value = event.target.value;
+				if (value) {
+					url.searchParams.set("provider", event.target.value)
+				} else {
+					url.searchParams.delete("provider")
+				}
+
+				hprovider.value = value;
+				
+				location.href = url;
+            });
+        });
+    </script>
+}
