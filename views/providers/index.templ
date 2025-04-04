@@ -1,0 +1,42 @@
+package providers
+
+import (
+	"avan/internal/db/sqlc"
+	"avan/internal/table"
+	"avan/views/components"
+	"fmt"
+)
+
+templ Index(providerList []sqlc.Provider, page components.PageData) {
+	<div class="flex justify-between">
+		<b>Providers</b>
+		if len(providerList) > 0 {
+			@components.Button("Create", "/dashboard/providers/create/sms")
+		} else {
+			<div></div>
+		}
+	</div>
+	if len(providerList) == 0 || providerList == nil {
+		{{ btn := components.Button("Create", "/dashboard/providers/create/sms") }}
+		@components.EmptyState("No provider has created", "Get started by creating a new provider.", btn)
+	} else {
+		{{ providers := table.ToTableMapList(providerList) }}
+		{{deleteAction := func(row map[string]any) (string, string, string) {
+	return "Delete", fmt.Sprintf("/dashboard/providers/%d/delete", row["ID"]), "POST"
+}
+		}}
+		{{editAction := func(row map[string]any) (string, string, string) {
+	return "Edit", fmt.Sprintf("/dashboard/providers/%d/edit", row["ID"]), "GET"
+}
+		}}
+		{{ actions := []components.TableAction{editAction, deleteAction} }}
+		{{resolver := func(row map[string]any, header string) any {
+	if header == "ConfigType" {
+		return table.GetProviderConfigType(row["ConfigType"].(int64))
+	}
+	return row[header]
+}
+		}}
+		@components.Table(providers, []string{"ID", "Name", "ConfigType"}, actions, resolver, page)
+	}
+}

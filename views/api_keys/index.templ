@@ -1,0 +1,62 @@
+package api_keys
+
+import (
+	"avan/internal/db/sqlc"
+	"avan/internal/table"
+	"avan/views/components"
+	"fmt"
+	"time"
+)
+
+templ Index(apiKeyList []sqlc.ApiKey, page components.PageData) {
+	<div class="flex justify-between">
+		<b>Api Keys</b>
+		if len(apiKeyList) > 0 {
+			@components.Button("Create", "/dashboard/api-keys/create")
+		} else {
+			<div></div>
+		}
+	</div>
+	if len(apiKeyList) == 0 || apiKeyList == nil {
+		{{ btn := components.Button("Create", "/dashboard/api-keys/create") }}
+		@components.EmptyState("No API Key has created", "Get started by creating a new API Key.", btn)
+	} else {
+		{{ apiKey := table.ToTableMapList(apiKeyList) }}
+		{{deleteAction := func(row map[string]any) (string, string, string) {
+	return "Delete", fmt.Sprintf("/dashboard/api-keys/%d/delete", row["ID"]), "POST"
+}
+		}}
+		{{ actions := []components.TableAction{deleteAction} }}
+		{{resolver := func(row map[string]any, header string) any {
+	if header == "" {
+		return fmt.Sprintf("<div class='copy cursor-pointer text-blue-500 underline' data-copy='%s'>Copy</div>", row["ApiKey"])
+	}
+	if header == "ExpireAt" {
+		expireAt := row["ExpireAt"].(*time.Time)
+		if expireAt != nil {
+			return fmt.Sprintf("Until %v", expireAt.Format(time.RFC822))
+		} else {
+			return "No Expire"
+		}
+	}
+	return row[header]
+}
+		}}
+		@components.Table(apiKey, []string{"ID", "Name", "ExpireAt", ""}, actions, resolver, page)
+	}
+	<script>
+        const copies = document.getElementsByClassName("copy");
+        if (copies && copies.length) {
+            for (const copy of copies) {
+                copy.onclick = function (e) {
+                    const text = e.target.getAttribute('data-copy');
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert('Api Key copied to clipboard!');
+                    }).catch(err => {
+                        console.error('Failed to copy: ', err);
+                    });
+                }
+            }
+        }
+    </script>
+}

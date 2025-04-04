@@ -1,0 +1,52 @@
+package templates
+
+import (
+	"avan/internal/db/sqlc"
+	"avan/internal/table"
+	"avan/views/components"
+	"fmt"
+	"golang.org/x/net/html"
+	"strings"
+)
+
+templ Index(templateList []sqlc.Template, page components.PageData) {
+	<div class="flex justify-between">
+		<b>Templates</b>
+		if len(templateList) > 0 {
+			@components.Button("Create", "/dashboard/templates/create")
+		} else {
+			<div></div>
+		}
+	</div>
+	if len(templateList) == 0 || templateList == nil {
+		{{ btn := components.Button("Create", "/dashboard/templates/create") }}
+		@components.EmptyState("No template has created", "Get started by creating a new template.", btn)
+	} else {
+		{{ templates := table.ToTableMapList(templateList) }}
+		{{editAction := func(row map[string]any) (string, string, string) {
+	return "Edit", fmt.Sprintf("/dashboard/templates/%d/edit", row["ID"]), "GET"
+}
+		}}
+		{{deleteAction := func(row map[string]any) (string, string, string) {
+	return "Delete", fmt.Sprintf("/dashboard/templates/%d/delete", row["ID"]), "POST"
+}
+		}}
+		{{ actions := []components.TableAction{editAction, deleteAction} }}
+		{{resolver := func(row map[string]any, header string) any {
+	if header == "ID" {
+		return row[header]
+	}
+	if header == "Content" {
+		content := row["Content"].(string)
+		_, err := html.Parse(strings.NewReader(content))
+		if err == nil {
+			return "HTML"
+		}
+		return row[header]
+	}
+	return fmt.Sprintf(`<div class="truncate" style="width: 140px">%s</div>`, row[header])
+}
+		}}
+		@components.Table(templates, []string{"ID", "Name", "Content"}, actions, resolver, page)
+	}
+}

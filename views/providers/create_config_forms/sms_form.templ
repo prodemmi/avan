@@ -1,0 +1,71 @@
+package create_config_forms
+
+import "avan/views/components"
+
+templ SmsForm() {
+	<div class="flex flex-col gap-4">
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_url">
+				URL
+			</label>
+			@components.UrlInput("sms_url", "Enter provider url", "")
+			<div id="url-data"></div>
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_method">
+				Method
+			</label>
+			{{
+	options := []components.SelectOption{
+		{Value: "0", Label: "GET"},
+		{Value: "1", Label: "POST"},
+	}
+			}}
+			@components.Select("sms_method", options, "0")
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_is_auth_in_header">
+				Authenticate in Header
+			</label>
+			@components.Checkbox("sms_is_auth_in_header", false)
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_auth_token_key">
+				Auth Token Key
+			</label>
+			@components.OptionalInput("sms_auth_token_key", "Enter token key", "")
+		</div>
+		<div>
+			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_auth_token_value">
+				Auth Token Value
+			</label>
+			@components.OptionalPasswordInput("sms_auth_token_value", "Enter token value", "")
+		</div>
+	</div>
+	<div class="mt-4" style="width: 20dvw">
+		@components.SubmitButton("Create Sms Config")
+	</div>
+	<script>
+        function validateUrl(url) {
+            return /^[a-z]+:\/\//i.test(url);
+        }
+
+        const urlInput = document.getElementById("sms_url");
+        if (urlInput) {
+            urlInput.oninput = (e) => {
+                const urlData = document.getElementById("url-data");
+                let content = "";
+                const value = e.target.value;
+                if (validateUrl(value)) {
+                    const searchParams = new URL(value).searchParams;
+                    searchParams.forEach((val, key) => {
+                        content += `<div><b>${key}</b>: ${val}</div>`;
+                    });
+                    urlData.innerHTML = content;
+                } else {
+                    urlData.innerHTML = `<div class='text-red-500'>Not a valid URL</div>`;
+                }
+            };
+        }
+    </script>
+}

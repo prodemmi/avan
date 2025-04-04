@@ -1,0 +1,9 @@
+# Config file for air
+root = "."
+tmp_dir = "tmp"
+[build]
+  cmd = "go build -o ./tmp/main ./cmd/server/main.go"
+  bin = "tmp/main --config=config/config.yml"
+  include_ext = ["go"]
+  exclude_dir = ["node_modules", "tmp"]
+  delay = 1000 # milliseconds

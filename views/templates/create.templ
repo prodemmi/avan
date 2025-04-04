@@ -1,0 +1,47 @@
+package templates
+
+import "avan/views/components"
+
+templ Create() {
+	<div class="flex justify-between">
+		<b>Create Template</b>
+		<div></div>
+	</div>
+	<div class="w-full">
+		<form class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 dark:bg-gray-900" action="/dashboard/templates" method="POST">
+			<div class="mb-4">
+				<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-100" for="name">
+					Name
+				</label>
+				@components.Input("name", "Template name", "")
+			</div>
+			<div class="mb-4">
+				<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-100" for="content">
+					Content
+				</label>
+				@components.Textarea("content", "Template content", "")
+				<div id="values"></div>
+			</div>
+			@components.SubmitButton("Create")
+		</form>
+	</div>
+	<script>
+        window.onload = function (e) {
+            const content = document.getElementById("content");
+            if (content) {
+                function updateValues(value) {
+                    const values = document.getElementById("values");
+                    const matches = value.match(/\$\w+/g);
+                    if (matches?.length > 0) {
+                        const innerHTML = "Values: <br>" + matches.map((val) => `<b>${val}</b>`).join("<br>");
+                        values.innerHTML = innerHTML;
+                    } else {
+                        values.innerHTML = "";
+                    }
+                }
+
+                content.addEventListener("input", () => updateValues(content.value));
+            }
+        };
+    </script>
+}

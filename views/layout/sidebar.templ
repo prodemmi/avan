@@ -1,0 +1,49 @@
+package layout
+
+import (
+	"avan/internal/db/sqlc"
+	"fmt"
+)
+
+templ SidebarItem(title string, url string, icon string) {
+	<div class="flex items-baseline gap-2 text-white dark:text-gray-300">
+		if len(icon) > 0 {
+			<i class={ fmt.Sprintf("%s ri-lg", icon) }></i>
+		}
+		<a href={ templ.URL(url) }>{ title }</a>
+	</div>
+}
+
+templ Sidebar() {
+	{{ theme := ctx.Value("theme").(string)}}
+	{{ primaryColor := ctx.Value("primaryColor").(string)}}
+	{{
+		if theme == "dark" {
+			primaryColor = "var(--color-gray-800)"
+		}
+	}}
+
+	<aside class="block h-dvh text-white p-4 dark:bg-gray-800 dark:text-gray-300" style={ fmt.Sprintf("width: 16dvw;background-color: %s", primaryColor) }>
+		<h1 class="text-2xl">Avan</h1>
+		<h3 class="text-md mt-2 mb-4">
+			Workspace:
+			<b>{ ctx.Value("workspace").(sqlc.Workspace).Name }</b>
+		</h3>
+		<div class="flex flex-col justify-between h-full">
+			<div class="flex flex-col gap-2">
+				@SidebarItem("Home", "/dashboard/", "ri-home-2-fill")
+				@SidebarItem("Messages", "/dashboard/messages?page=0", "ri-chat-3-line")
+				@SidebarItem("Templates", "/dashboard/templates?page=0", "ri-layout-horizontal-line")
+				@SidebarItem("Providers", "/dashboard/providers?page=0", "ri-bank-line")
+				@SidebarItem("Analysis & Service Health", "/dashboard/analysis", "ri-pie-chart-2-line")
+			</div>
+			<div class="flex flex-col gap-2 mb-18">
+				@SidebarItem("Users", "/dashboard/users", "")
+				@SidebarItem("API Keys", "/dashboard/api-keys", "")
+				@SidebarItem("Workspaces", "/dashboard/workspaces", "")
+				@SidebarItem("Settings", "/dashboard/settings", "")
+				@SidebarItem("Logout", "/auth/logout", "")
+			</div>
+		</div>
+	</aside>
+}

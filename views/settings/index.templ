@@ -1,0 +1,188 @@
+package settings
+
+import (
+	"avan/views/components"
+	"avan/internal/db/sqlc"
+	"fmt"
+)
+
+func GetSettingValue(settings []sqlc.Setting, key string) string {
+	for _, setting := range settings {
+		if setting.Key == key {
+			if setting.Value == nil {
+				return ""
+			}
+			return *setting.Value
+		}
+	}
+	return ""
+}
+
+templ Index(settings []sqlc.Setting) {
+	<div class="flex justify-between">
+		<b class="text-gray-900 dark:text-gray-200">Application Settings</b>
+		<div></div>
+	</div>
+	<!-- Admin Settings -->
+	<div class="mb-6">
+		<label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="admin_email">
+			Admin Email
+		</label>
+		{{ adminEmail := GetSettingValue(settings, "admin-email") }}
+		@components.ReadonlyInput("admin_email", "Enter admin email", adminEmail)
+		<form action="/dashboard/settings/change-password" method="POST">
+			<div class="flex flex-col w-full items-end">
+				<div class="w-full">
+					<div class="mt-4">
+						<label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="admin_password">
+							Admin Password
+						</label>
+						@components.OptionalInput("admin_password", "Enter new password", "")
+					</div>
+					<div class="mt-4">
+						<label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="admin_password">
+							Admin Config Password
+						</label>
+						@components.OptionalInput("admin_password", "Enter new password", "")
+					</div>
+				</div>
+				<div class="mt-4">
+					@components.SubmitButton("Change Password")
+				</div>
+			</div>
+		</form>
+	</div>
+	<!-- Logs Settings -->
+	<div class="mb-6">
+		<label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="logs_directory">
+			Logs Directory
+		</label>
+		{{ logDir := GetSettingValue(settings, "log-dir") }}
+		@components.ReadonlyInput("logs_directory", "Enter logs directory", logDir)
+	</div>
+	<!-- Appearance Settings -->
+	<div class="mb-6">
+		<h3 class="text-lg font-bold mb-2 text-gray-900 dark:text-gray-200">Appearance Settings</h3>
+		<label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="theme">
+			Theme
+		</label>
+		{{
+	options := []components.SelectOption{
+		{Value: "light", Label: "Light"},
+		{Value: "dark", Label: "Dark"},
+		{Value: "", Label: "System Default"},
+	}
+		}}
+		{{ theme := GetSettingValue(settings, "theme") }}
+		@components.Select("theme", options, theme)
+
+		{{ primaryColor := GetSettingValue(settings, "primary-color") }}
+		<div class="mt-4">
+			<label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="primary_color">
+				Primary Color
+			</label>
+			<div class="flex items-center gap-3">
+				for _, color := range []string{"#780C28", "#210F37", "#522546", "#183B4E", "#5F8B4C", "#EF9651"} {
+				<form action="/dashboard/settings" method="POST" class="relative">
+					<input type="hidden" name="key" value="primary-color">
+					<input type="hidden" name="value" value={ color }>
+					if color == primaryColor {
+					<div
+							class="w-8 h-8 rounded-full border-solid border-2 shadow-md border-blue-500 cursor-pointer dark:border-gray-800"
+							style={ fmt.Sprintf("background-color: %s", color) }
+					onclick="this.closest('form').submit()">
+			</div>
+			} else {
+			<div
+					class="w-8 h-8 rounded-full cursor-pointer"
+					style={ fmt.Sprintf("background-color: %s", color) }
+			onclick="this.closest('form').submit()">
+		</div>
+		}
+		<input type="submit" class="absolute" style="inset: 0;width: 100%;height: 100%;visibility: hidden;" />
+		</form>
+		}
+	</div>
+
+		</div>
+	</div>
+	<!-- Time and Date Settings -->
+	<div class="mb-6">
+		<h3 class="text-lg font-bold mb-2 text-gray-900 dark:text-gray-200">Time & Date</h3>
+		<label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="timezone">
+			Timezone
+		</label>
+		{{
+	options = []components.SelectOption{
+		{Value: "UTC", Label: "UTC"},
+		{Value: "America/New_York", Label: "New York (EST)"},
+		{Value: "Europe/London", Label: "London (GMT)"},
+		{Value: "Asia/Tehran", Label: "Tehran (IRST)"},
+	}
+		}}
+		{{ timezone := GetSettingValue(settings, "timezone") }}
+		@components.Select("timezone", options, timezone)
+	</div>
+
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			const themeSelect = document.getElementById("theme");
+
+			if (themeSelect) {
+				themeSelect.addEventListener("change", function () {
+					// Create a form element
+					const form = document.createElement("form");
+					form.method = "POST";
+					form.action = "/dashboard/settings"; // Change to your desired endpoint
+
+					// Create hidden input for key
+					const keyInput = document.createElement("input");
+					keyInput.type = "hidden";
+					keyInput.name = "key";
+					keyInput.value = "theme";
+					form.appendChild(keyInput);
+
+					// Create hidden input for value
+					const valueInput = document.createElement("input");
+					valueInput.type = "hidden";
+					valueInput.name = "value";
+					valueInput.value = themeSelect.value; // New selected value
+					form.appendChild(valueInput);
+
+					// Append the form to body and submit it
+					document.body.appendChild(form);
+					form.submit();
+				});
+			}
+
+			const timezoneSelect = document.getElementById("timezone");
+
+			if (timezoneSelect) {
+				timezoneSelect.addEventListener("change", function () {
+					// Create a form element
+					const form = document.createElement("form");
+					form.method = "POST";
+					form.action = "/dashboard/settings"; // Change to your desired endpoint
+
+					// Create hidden input for key
+					const keyInput = document.createElement("input");
+					keyInput.type = "hidden";
+					keyInput.name = "key";
+					keyInput.value = "timezone";
+					form.appendChild(keyInput);
+
+					// Create hidden input for value
+					const valueInput = document.createElement("input");
+					valueInput.type = "hidden";
+					valueInput.name = "value";
+					valueInput.value = timezoneSelect.value; // New selected value
+					form.appendChild(valueInput);
+
+					// Append the form to body and submit it
+					document.body.appendChild(form);
+					form.submit();
+				});
+			}
+		});
+	</script>
+}

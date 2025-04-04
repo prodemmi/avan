@@ -1,0 +1,16 @@
+package components
+
+templ EmptyState(title string, description string, footer templ.Component) {
+	<div class="flex flex-col items-center justify-center text-center p-6 h-full">
+		<i class="ri-close-circle-line text-6xl text-gray-400 dark:text-gray-600"></i>
+		if len(title) > 0 {
+			<h2 class="text-2xl font-bold text-gray-700 mt-6 dark:text-gray-300">{ title }</h2>
+		}
+		if len(description) > 0 {
+			<p class="text-gray-500 my-2 dark:text-gray-400">{ description }</p>
+		}
+		if footer != nil {
+			@footer
+		}
+	</div>
+}

@@ -1,0 +1,10 @@
+package components
+
+templ Button(label string, url string) {
+	<a href={ templ.URL(url) }>
+		<button
+			class="bg-blue-500 hover:bg-blue-700 cursor-pointer text-white font-bold py-2 px-4 rounded-full dark:bg-blue-600 dark:hover:bg-blue-800">
+			{ label }
+		</button>
+	</a>
+}

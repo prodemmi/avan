@@ -1,0 +1,12 @@
+package components
+
+templ Checkbox(name string, defaultValue bool) {
+	<input
+		class="shadow appearance-none border rounded p-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+		id={ name }
+		name={ name }
+		checked?={ defaultValue }
+		value="1"
+		type="checkbox"
+	/>
+}

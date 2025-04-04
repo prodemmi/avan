@@ -1,0 +1,7 @@
+package components
+
+templ IconButton(id string, children templ.Component) {
+	<button id={ id } style="width: 64px;" class="flex justify-center items-center P-0 cursor-pointer bg-blue-500 hover:bg-blue-700 text-white rounded-full">
+		@children
+	</button>
+}
