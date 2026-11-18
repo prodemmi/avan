@@ -25,7 +25,6 @@ templ Sidebar() {
 
 	<aside class="admin-sidebar text-white dark:text-gray-300" style={ fmt.Sprintf("background-color: %s", primaryColor) }>
 		<a href="/dashboard/" class="admin-brand" aria-label="Avan home">
-			<span class="admin-brand-mark">A</span>
 			<span class="admin-brand-name">Avan</span>
 		</a>
 		<div class="admin-workspace">
@@ -36,9 +35,9 @@ templ Sidebar() {
 			<span class="admin-sidebar-caption">OVERVIEW</span>
 			<nav class="admin-nav">
 				@SidebarItem("Home", "/dashboard/", "ri-home-2-fill")
-				@SidebarItem("Messages", "/dashboard/messages?page=0", "ri-chat-3-line")
-				@SidebarItem("Templates", "/dashboard/templates?page=0", "ri-layout-horizontal-line")
 				@SidebarItem("Providers", "/dashboard/providers?page=0", "ri-bank-line")
+				@SidebarItem("Templates", "/dashboard/templates?page=0", "ri-layout-horizontal-line")
+				@SidebarItem("Messages", "/dashboard/messages?page=0", "ri-chat-3-line")
 				@SidebarItem("Analysis & Service Health", "/dashboard/analysis", "ri-pie-chart-2-line")
 			</nav>
 			<span class="admin-sidebar-caption admin-sidebar-caption-manage">MANAGE</span>

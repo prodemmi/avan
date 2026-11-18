@@ -1,11 +1,14 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.24.0-alpine as GOBUILDER
+FROM golang:1.26.0-alpine as GOBUILDER
 
+ENV GOTOOLCHAIN local
 WORKDIR /app
 
 COPY . .
 
 RUN go env -w GOPROXY=https://goproxy.cn
+
+RUN go tool templ generate
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
@@ -22,7 +25,7 @@ COPY ./views ./views
 RUN --mount=type=cache,target=/root/.npm npm install
 RUN npm run build
 
-FROM golang:1.24.0-alpine as FINAL
+FROM golang:1.26.0-alpine as FINAL
 
 WORKDIR /avan
 
