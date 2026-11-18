@@ -1,7 +1,7 @@
 -- name: GetApiKeysPostgresql :many
 SELECT *
 from api_keys
-WHERE workspace_id = $1 AND owner_id = $2
+WHERE workspace_id = $1
 ORDER BY created_at DESC;
 
 -- name: CreateAPIKeyPostgresql :exec
@@ -15,4 +15,4 @@ WHERE api_key = $1
 LIMIT 1;
 
 -- name: DeleteAPIKeyPostgresql :exec
-DELETE FROM api_keys WHERE id = $1;
+DELETE FROM api_keys WHERE id = $1 AND workspace_id = $2;

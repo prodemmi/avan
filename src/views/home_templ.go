@@ -29,27 +29,27 @@ func Home() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col space-y-6\"><!-- Welcome Section --><div class=\"bg-blue-500 text-white p-8 rounded-lg shadow-md dark:bg-blue-600\"><h1 class=\"text-3xl font-bold\">Welcome to Avan</h1><p class=\"mt-3 text-lg\">Send messages seamlessly through multiple providers (SMS, Email, Telegram, Slack, Webhook).</p></div><!-- Get Started Guide --><div class=\"bg-white p-6 rounded-lg shadow-md dark:bg-gray-800 dark:text-gray-200\"><h2 class=\"text-xl font-bold mb-4\">🚀 Get Started</h2><p class=\"text-gray-700 dark:text-gray-300\">New here? Follow these steps:</p><ul class=\"list-decimal pl-4 mt-2\"><li>Configure your providers in <a href=\"/dashboard/providers\" class=\"text-blue-500 dark:text-blue-400\">Manage Providers</a></li><li>Set up your application settings in <a href=\"/dashboard/settings\" class=\"text-blue-500 dark:text-blue-400\">Settings</a></li><li>Create your message templates in <a href=\"/dashboard/templates\" class=\"text-blue-500 dark:text-blue-400\">Templates</a></li><li>Send messages by API</li></ul></div><!-- Quick Actions --><div class=\"grid grid-cols-2 gap-6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"dashboard-home\"><section class=\"dashboard-hero\"><div class=\"dashboard-hero-copy\"><span class=\"dashboard-kicker\">YOUR MESSAGING WORKSPACE</span><h1>Welcome to Avan</h1><p>Send messages seamlessly through multiple providers (SMS, Email, Telegram, Slack, Webhook).</p><a class=\"dashboard-primary-link\" href=\"/dashboard/messages?page=0\"><i class=\"ri-chat-new-line\"></i> View messages <i class=\"ri-arrow-right-line\"></i></a></div><div class=\"dashboard-hero-art\" aria-hidden=\"true\"><i class=\"ri-send-plane-2-line\"></i></div></section><section class=\"dashboard-section\"><div class=\"dashboard-section-heading\"><div><span class=\"dashboard-kicker\">A FEW QUICK STEPS</span><h2>Get started</h2></div><p>Set up your workspace and start sending.</p></div><div class=\"dashboard-grid\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = QuickActionCard("🔑 API Keys", "Generate and manage API keys for integrations", "/dashboard/api-keys").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = QuickActionCard("ri-router-line", "Manage providers", "Connect SMS, email, and chat providers.", "/dashboard/providers").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = QuickActionCard("⚙️ Settings", "Configure application settings", "/dashboard/settings").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = QuickActionCard("ri-file-list-3-line", "Create templates", "Prepare reusable message templates.", "/dashboard/templates").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = QuickActionCard("🔌 Manage Providers", "Add or edit message providers", "/dashboard/providers").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = QuickActionCard("ri-key-2-line", "API keys", "Create credentials for your integrations.", "/dashboard/api-keys").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = QuickActionCard("📂 View Logs", "Check application logs", "/dashboard/logs").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = QuickActionCard("ri-settings-3-line", "Settings", "Manage preferences for your application.", "/dashboard/settings").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><!-- Recent Activity --><div class=\"bg-white shadow-md p-6 rounded-lg dark:bg-gray-800 dark:text-gray-200\"><h2 class=\"text-xl font-bold mb-4\">📢 Recent Activity</h2><ul class=\"list-disc pl-8 text-gray-700 dark:text-gray-300\"><li>Message sent to <b>Telegram</b> - 2 minutes ago</li><li>New provider <b>SMS Gateway</b> added - 1 hour ago</li><li>Admin changed <b>application settings</b> - Yesterday</li></ul></div><!-- Help Section --><div class=\"bg-white p-6 rounded-lg shadow-md dark:bg-gray-800 dark:text-gray-200\"><h2 class=\"text-xl font-bold\">❓ Need Help?</h2><p class=\"mt-2\">Check out our documentation or contact support.</p><a href=\"/dashboard/help\" class=\"mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded dark:bg-blue-600\">View Docs</a></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></section></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -57,7 +57,7 @@ func Home() templ.Component {
 	})
 }
 
-func QuickActionCard(title string, description string, link string) templ.Component {
+func QuickActionCard(icon string, title string, description string, link string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -87,33 +87,55 @@ func QuickActionCard(title string, description string, link string) templ.Compon
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"bg-white shadow-md rounded-lg p-6 text-lg font-semibold hover:shadow-lg transition dark:bg-gray-800 dark:text-gray-200 dark:hover:shadow-md\"><h3>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"dashboard-card\"><span class=\"dashboard-card-icon\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(title)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 48, Col: 13}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+		var templ_7745c5c3_Var4 = []any{icon}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var4...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</h3><p class=\"text-sm text-gray-600 dark:text-gray-400\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<i class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(description)
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var4).String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 49, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 1, Col: 0}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></a>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" aria-hidden=\"true\"></i></span> <span class=\"dashboard-card-copy\"><strong>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var6 string
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 32, Col: 51}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</strong><span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var7 string
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(description)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 32, Col: 81}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</span></span> <i class=\"ri-arrow-right-up-line dashboard-card-arrow\" aria-hidden=\"true\"></i></a>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -15,7 +15,10 @@ type AnalysisData struct {
 	AvgSendTime      interface{}
 	ConsumerCount    int
 	ProvidersStats   map[string]sqlc.GetProviderStatsPostgresqlRow
-	TimeDistribution map[string]sqlc.GetTimeDistributionPostgresqlRow
+	TimeDistribution map[string][]sqlc.GetTimeDistributionPostgresqlRow
+	Range            string
+	StartDate        string
+	EndDate          string
 
 	NodesCount     int
 	HealthyNodes   int
@@ -30,32 +33,19 @@ templ Index(data AnalysisData) {
 				<!-- Filters and Timestamp Range Dropdown with Custom Range -->
 				<div class="p-4 gap-4 flex justify-between items-center">
 					<div class="flex items-baseline gap-4">
-						{{ refreshTimeOptions := []components.SelectOption{
-								{Value: "5", Label: "5 Seconds"},
-								{Value: "10", Label: "10 Seconds"},
-								{Value: "15", Label: "15 Seconds"},
-								{Value: "30", Label: "30 Seconds"},
-								{Value: "60", Label: "1 Minute"},
-								{Value: "120", Label: "2 Minute"},
-								{Value: "450", Label: "5 Minute"},
-							}
-						}}
-						@components.Select("", refreshTimeOptions, "last_hour")
-						<!-- Custom Date Range Picker -->
 						{{ timeRangeOptions := []components.SelectOption{
 								{Value: "last_hour", Label: "Last Hour"},
-								{Value: "last_s_hours", Label: "Last 2 Hours"},
+								{Value: "last_2_hours", Label: "Last 2 Hours"},
 								{Value: "last_24_hours", Label: "Last 24 Hours"},
 								{Value: "last_7_days", Label: "Last 7 Days"},
 								{Value: "last_30_days", Label: "Last Month"},
 								{Value: "custom", Label: "Custom Range"},
 							}
 						}}
-						@components.Select("timestamp_range", timeRangeOptions, "last_hour")
-						<!-- Custom Date Range Picker -->
+						@components.Select("range", timeRangeOptions, data.Range)
 						<div id="custom_range" class="hidden flex gap-4">
-							<input name="start_date" type="date" id="startDate" class="p-2 bg-white rounded dark:bg-gray-600"/>
-							<input name="end_date" type="date" id="endDate" class="p-2 bg-white rounded dark:bg-gray-600"/>
+							<label for="startDate">From <input name="start_date" type="date" id="startDate" value={ data.StartDate }/></label>
+							<label for="endDate">To <input name="end_date" type="date" id="endDate" value={ data.EndDate }/></label>
 						</div>
 					</div>
 					@components.SubmitButton("Filter")
@@ -136,21 +126,7 @@ templ Index(data AnalysisData) {
 			<div class="p-4 bg-white rounded-lg shadow-md dark:bg-gray-700">
 				<div class="flex justify-between">
 					<h3 class="text-xl font-bold mb-3">Message Distribution Over Time</h3>
-					<div class="flex justify-between gap-4">
-						<div class="flex items-center w-full gap-2">
-							{{ options := []components.SelectOption{
-							{Value: "0", Label: "Success"},
-							{Value: "2", Label: "Failed"},
-							}
-							}}
-							<label for="date_range">
-								Type
-							</label>
-							@components.Select("type", options, "0")
-						</div>
-						@components.SubmitButton("Filter")
 					</div>
-				</div>
 				<canvas id="timeDistributionChart" class="w-full h-48"></canvas>
 			</div>
 			<!-- Service Health Section -->
@@ -175,7 +151,7 @@ templ Index(data AnalysisData) {
 			<div class="bg-white shadow-md rounded-lg p-6 mt-4 dark:bg-gray-700">
 				<h2 class="text-xl font-bold mb-4">System Status</h2>
 				<div class="grid grid-cols-2 gap-4">
-					@SystemStatusCard("Kafka", "Connected", "green")
+					@SystemStatusCard("Redis Queue", "Connected", "green")
 					@SystemStatusCard("Consumers", fmt.Sprintf("Running (%d active)", data.ConsumerCount), "green")
 					@SystemStatusCard("Database (PostgreSQL)", "Connected", "green")
 					@SystemStatusCard("Redis", "Connected", "green")
@@ -195,16 +171,20 @@ templ Index(data AnalysisData) {
 		const providersCtx = document.getElementById('providersChart').getContext('2d');
 
 		// Time Distribution Bar Chart
-		const datasets = Object.keys(data.TimeDistribution).map((provider, i) => ({
+		const series = data.TimeDistribution || {};
+		const providers = Object.keys(series);
+		const buckets = [...new Set(providers.flatMap(provider => (series[provider] || []).map(row => row.time_bucket)))].sort();
+		const colors = ['#76558e', '#6e8e59', '#c47d55', '#5485a0', '#b75b6d'];
+		const datasets = providers.map((provider, i) => ({
 			label: provider,
-			data: Object.values(data.TimeDistribution[provider]),
-			backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'][i]
+			data: buckets.map(bucket => (series[provider] || []).find(row => row.time_bucket === bucket)?.message_count ?? 0),
+			backgroundColor: colors[i % colors.length]
 		}));
 
 		new Chart(timeCtx, {
 			type: 'bar',
 			data: {
-				labels: Object.keys(data.TimeDistribution[Object.keys(data.TimeDistribution)[0]]),
+				labels: buckets,
 				datasets: datasets
 			},
 			options: {
@@ -215,28 +195,24 @@ templ Index(data AnalysisData) {
 		});
 
 		// Providers Pie Chart
+		const providerStats = data.ProvidersStats || {};
 		new Chart(providersCtx, {
 			type: 'pie',
 			data: {
-				labels: Object.keys(data.ProvidersStats),
+				labels: Object.keys(providerStats),
 				datasets: [{
-					data: Object.values(data.ProvidersStats).map(value => value.total),
+					data: Object.values(providerStats).map(value => value.total),
 					backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
 				}]
 			}
 		});
 
-		const timestampRangeSelect = document.getElementById('timestamp_range');
+		const timestampRangeSelect = document.getElementById('range');
 		const customRange = document.getElementById('custom_range');
 
-		// Show custom date range inputs when "Custom Range" is selected
-		timestampRangeSelect.addEventListener('change', function () {
-			if (timestampRangeSelect.value === 'custom') {
-				customRange.classList.remove('hidden');
-			} else {
-				customRange.classList.add('hidden');
-			}
-		});
+		const updateDateRange = () => customRange.classList.toggle('hidden', timestampRangeSelect.value !== 'custom');
+		updateDateRange();
+		timestampRangeSelect.addEventListener('change', updateDateRange);
 	});
 </script>
 }

@@ -33,10 +33,7 @@ type Config struct {
 	RedisPassword string `yaml:"redis.password"`
 	RedisDB       int    `yaml:"redis.db"`
 
-	KafkaBrokers []string `yaml:"kafka.brokers"`
-	KafkaTopic   string   `yaml:"kafka.topic"`
-
-	KafkaConsumerCount int `yaml:"kafka.consumer.count"`
+	RedisConsumerCount int `yaml:"redis.consumer.count"`
 
 	Hosts []string `yaml:"hosts"`
 
@@ -77,10 +74,11 @@ func NewConfig(appFlags AppFlags) Config {
 	// Load .env file if exists
 	loadEnvVariables()
 	// Read the YAML file
-	filePath := getConfigFile()
-
-	if appFlags.ConfigPath != nil || *appFlags.ConfigPath != "" {
+	var filePath string
+	if appFlags.ConfigPath != nil && *appFlags.ConfigPath != "" {
 		filePath = *appFlags.ConfigPath
+	} else {
+		filePath = getConfigFile()
 	}
 
 	data, err := os.ReadFile(filePath)

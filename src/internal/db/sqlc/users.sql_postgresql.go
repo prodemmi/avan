@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"time"
 )
 
 const createAdminUserPostgresql = `-- name: CreateAdminUserPostgresql :exec
@@ -70,4 +71,48 @@ func (q *Queries) FindUserByIDMPostgresql(ctx context.Context, id int64) (User, 
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getUsersPostgresql = `-- name: GetUsersPostgresql :many
+SELECT id, name, email, mobile, created_at
+FROM users
+WHERE workspace_id = $1
+ORDER BY created_at DESC, id DESC
+`
+
+type GetUsersPostgresqlRow struct {
+	ID        int64      `db:"id" json:"id"`
+	Name      string     `db:"name" json:"name"`
+	Email     string     `db:"email" json:"email"`
+	Mobile    *string    `db:"mobile" json:"mobile"`
+	CreatedAt *time.Time `db:"created_at" json:"created_at"`
+}
+
+func (q *Queries) GetUsersPostgresql(ctx context.Context, workspaceID int64) ([]GetUsersPostgresqlRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersPostgresql, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUsersPostgresqlRow
+	for rows.Next() {
+		var i GetUsersPostgresqlRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Email,
+			&i.Mobile,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

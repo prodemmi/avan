@@ -16,12 +16,13 @@ func ApiKeyMiddleware(apiKeyService services.ApiKeyService, workspaceService ser
 			return
 		}
 
-		if validated := apiKeyService.ValidateApiKey(tokenString); !validated {
+		apiKey, err := apiKeyService.ValidateApiKey(tokenString)
+		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		workspace, err := workspaceService.GetWorkspaceByToken(tokenString)
+		workspace, err := workspaceService.GetWorkspace(apiKey.WorkspaceID)
 		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return

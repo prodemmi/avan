@@ -74,7 +74,7 @@ func (w MessageRepository) GetMessage(ctx context.Context, messageID int64) (sql
 	return w.Base.DB.Queries.GetMessagePostgresql(ctx, messageID)
 }
 
-func (w MessageRepository) GetTimeDistribution(ctx context.Context, workspaceID, providerID int64, startDate, endDate *time.Time) (sqlc.GetTimeDistributionPostgresqlRow, error) {
+func (w MessageRepository) GetTimeDistribution(ctx context.Context, workspaceID, providerID int64, startDate, endDate *time.Time) ([]sqlc.GetTimeDistributionPostgresqlRow, error) {
 	return w.Base.DB.Queries.GetTimeDistributionPostgresql(ctx, sqlc.GetTimeDistributionPostgresqlParams{
 		WorkspaceID: workspaceID,
 		ProviderID:  providerID,

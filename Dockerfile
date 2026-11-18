@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM golang:1.24.0-alpine as GOBUILDER
 
 WORKDIR /app
@@ -5,17 +6,10 @@ WORKDIR /app
 COPY . .
 
 RUN go env -w GOPROXY=https://goproxy.cn
-RUN go mod tidy && go mod download
 
-RUN go install github.com/a-h/templ/cmd/templ@latest
-RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-
-RUN apk add --no-cache make bash
-
-RUN make sqlc
-RUN make templ
-
-RUN go build -o avan cmd/server/main.go
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    go build -o avan cmd/server/main.go
 
 FROM node:alpine as CSSBUILDER
 
@@ -23,8 +17,9 @@ WORKDIR /app
 
 COPY package*.json .
 COPY ./public ./public
+COPY ./views ./views
 
-RUN npm install
+RUN --mount=type=cache,target=/root/.npm npm install
 RUN npm run build
 
 FROM golang:1.24.0-alpine as FINAL

@@ -17,9 +17,8 @@ type ApiKeyHandler struct {
 }
 
 func (w ApiKeyHandler) Index(c *gin.Context) {
-	userID := GetUserIDFromContext(c)
-	apiKeyID := GetWorkspaceIDFromContext(c)
-	_apiKeys, err := w.ApiKeyService.GetApiKeys(apiKeyID, userID)
+	workspaceID := GetWorkspaceIDFromContext(c)
+	_apiKeys, err := w.ApiKeyService.GetApiKeys(workspaceID)
 	if err != nil {
 		c = ContextWithError(c, err.Error())
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -111,9 +110,14 @@ func (w ApiKeyHandler) Delete(c *gin.Context) {
 	}
 
 	apiKeyID, err := ConvertToInt64(apiKeyIDParam)
-	err = w.ApiKeyService.DeleteApiKey(apiKeyID)
 	if err != nil {
-		c = ContextWithError(c, err.Error())
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	err = w.ApiKeyService.DeleteApiKey(apiKeyID, GetWorkspaceIDFromContext(c))
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 
 	c.Redirect(http.StatusFound, "/dashboard/api-keys")

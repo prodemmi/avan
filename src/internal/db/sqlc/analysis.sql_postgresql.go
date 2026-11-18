@@ -50,7 +50,7 @@ func (q *Queries) GetProviderStatsPostgresql(ctx context.Context, arg GetProvide
 	return i, err
 }
 
-const getTimeDistributionPostgresql = `-- name: GetTimeDistributionPostgresql :one
+const getTimeDistributionPostgresql = `-- name: GetTimeDistributionPostgresql :many
 WITH bounds AS (
     SELECT $3::timestamp AS start_date,
            $4::timestamp AS end_date
@@ -84,16 +84,32 @@ type GetTimeDistributionPostgresqlRow struct {
 	MessageCount int64  `db:"message_count" json:"message_count"`
 }
 
-func (q *Queries) GetTimeDistributionPostgresql(ctx context.Context, arg GetTimeDistributionPostgresqlParams) (GetTimeDistributionPostgresqlRow, error) {
-	row := q.db.QueryRowContext(ctx, getTimeDistributionPostgresql,
+func (q *Queries) GetTimeDistributionPostgresql(ctx context.Context, arg GetTimeDistributionPostgresqlParams) ([]GetTimeDistributionPostgresqlRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTimeDistributionPostgresql,
 		arg.WorkspaceID,
 		arg.ProviderID,
 		arg.StartDate,
 		arg.EndDate,
 	)
-	var i GetTimeDistributionPostgresqlRow
-	err := row.Scan(&i.TimeBucket, &i.MessageCount)
-	return i, err
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTimeDistributionPostgresqlRow
+	for rows.Next() {
+		var i GetTimeDistributionPostgresqlRow
+		if err := rows.Scan(&i.TimeBucket, &i.MessageCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const messageSummaryPostgresql = `-- name: MessageSummaryPostgresql :one

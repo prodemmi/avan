@@ -29,7 +29,7 @@ func Login(loginActionUrl string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Avan | Login</title><link href=\"/public/styles.css\" rel=\"stylesheet\"><link href=\"https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css\" rel=\"stylesheet\"></head><body class=\"dark:bg-gray-900\"><div class=\"flex min-h-full flex-col justify-center px-6 py-12 lg:px-8\"><div class=\"sm:mx-auto sm:w-full sm:max-w-sm\"><h2 class=\"mt-10 text-center text-2xl/9 font-bold tracking-tight text-gray-900 dark:text-white\">Sign in to <b>Avan</b></h2></div><div class=\"mt-10 sm:mx-auto sm:w-full sm:max-w-sm\"><form class=\"space-y-6\" action=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Avan | Login</title><link href=\"/public/styles.css\" rel=\"stylesheet\"><link href=\"https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css\" rel=\"stylesheet\"><script src=\"/public/admin.js\" defer></script></head><body class=\"dark:bg-gray-900\"><button class=\"language-toggle login-language-toggle\" id=\"language-toggle\" type=\"button\" aria-label=\"Switch language\" title=\"Switch language\"><i class=\"ri-translate-2\"></i><span>EN</span><span class=\"language-divider\">/</span><span lang=\"fa\">فارسی</span></button><div class=\"flex min-h-full flex-col justify-center px-6 py-12 lg:px-8\"><div class=\"sm:mx-auto sm:w-full sm:max-w-sm\"><h2 class=\"mt-10 text-center text-2xl/9 font-bold tracking-tight text-gray-900 dark:text-white\">Sign in to <b>Avan</b></h2></div><div class=\"mt-10 sm:mx-auto sm:w-full sm:max-w-sm\"><form class=\"space-y-6\" action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -50,7 +50,7 @@ func Login(loginActionUrl string) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(errorMessage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth/login.templ`, Line: 53, Col: 26}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth/login.templ`, Line: 57, Col: 26}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {

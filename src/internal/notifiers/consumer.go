@@ -3,81 +3,123 @@ package notifiers
 import (
 	"avan/internal/config"
 	"avan/internal/db/sqlc"
+	internalredis "avan/internal/redis"
 	"avan/internal/services"
 	"context"
 	"encoding/json"
-	"github.com/IBM/sarama"
+	"os"
+	"strings"
+	"time"
+
+	goredis "github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
-type Handler struct {
-	Notifier Notifier
-	Logger   zap.Logger
-}
-
-func (h Handler) Setup(session sarama.ConsumerGroupSession) error {
-
-	return nil
-}
-
-func (h Handler) Cleanup(session sarama.ConsumerGroupSession) error {
-
-	return nil
-}
-
-func (h Handler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	for msg := range claim.Messages() {
-		var message sqlc.Message
-
-		err := json.Unmarshal(msg.Value, &message)
-		if err != nil {
-			h.Logger.Fatal("failed to unmarshal message value", zap.Error(err))
-		}
-
-		provider, err := h.Notifier.ProviderService.GetProvider(message.ProviderID)
-		if err != nil {
-			h.Logger.Error("failed to get provider info", zap.Error(err))
-		}
-
-		commitMessage := func(err error) {
-			if err == nil {
-				if err := h.Notifier.MessageService.MarkMessageAsSuccess(message.ID); err == nil {
-					session.MarkMessage(msg, "")
-				}
-			} else {
-				_ = h.Notifier.MessageService.MarkMessageAsError(message.ID)
-			}
-		}
-
-		err = h.Notifier.SendMessage(provider, message)
-		commitMessage(err)
-	}
-	return nil
-}
-
 func (n Notifier) Start() {
-	consumersNumber := n.Config.KafkaConsumerCount
-
-	if consumersNumber == 0 {
+	if n.Config.RedisConsumerCount < 1 {
 		n.Logger.Fatal("failed to setup consumer: the consumer count cannot be 0")
+		return
 	}
-
-	cfg := sarama.NewConfig()
-	cfg.Consumer.Offsets.AutoCommit.Enable = false
 
 	ctx := context.Background()
-	consumer, err := sarama.NewConsumerGroup(n.Config.KafkaBrokers, "notifier-group-id", cfg)
-	if err != nil {
-		n.Logger.Fatal("failed to start consumer group", zap.Error(err))
+	client := n.MessageService.Repo.Base.Redis.Client()
+	stream := internalredis.MessageQueueStream
+	group := internalredis.MessageQueueGroup
+	if err := client.XGroupCreateMkStream(ctx, stream, group, "0").Err(); err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
+		n.Logger.Fatal("failed to create Redis consumer group", zap.Error(err))
+		return
 	}
 
-	topics := []string{n.Config.KafkaTopic}
+	consumer, err := os.Hostname()
+	if err != nil {
+		n.Logger.Fatal("failed to identify Redis consumer", zap.Error(err))
+		return
+	}
 
-	for range consumersNumber {
-		err = consumer.Consume(ctx, topics, Handler{n, n.Logger})
+	claimCursor := "0-0"
+	for {
+		messages, next, err := client.XAutoClaim(ctx, &goredis.XAutoClaimArgs{
+			Stream:   stream,
+			Group:    group,
+			Consumer: consumer,
+			MinIdle:  time.Minute,
+			Start:    claimCursor,
+			Count:    10,
+		}).Result()
 		if err != nil {
-			n.Logger.Fatal("failed to start consumer", zap.Error(err))
+			n.Logger.Fatal("failed to reclaim pending Redis messages", zap.Error(err))
+			return
 		}
+		for _, message := range messages {
+			n.consumeMessage(ctx, client, stream, group, message)
+		}
+		claimCursor = next
+		if claimCursor != "0-0" {
+			continue
+		}
+
+		streams, err := client.XReadGroup(ctx, &goredis.XReadGroupArgs{
+			Group:    group,
+			Consumer: consumer,
+			Streams:  []string{stream, ">"},
+			Count:    10,
+			Block:    time.Second,
+		}).Result()
+		if err == goredis.Nil {
+			continue
+		}
+		if err != nil {
+			n.Logger.Fatal("failed to read Redis queue", zap.Error(err))
+			return
+		}
+		for _, result := range streams {
+			for _, message := range result.Messages {
+				n.consumeMessage(ctx, client, stream, group, message)
+			}
+		}
+	}
+}
+
+func (n Notifier) consumeMessage(ctx context.Context, client *goredis.Client, stream, group string, queued goredis.XMessage) {
+	payload, ok := queued.Values["payload"].(string)
+	if !ok {
+		n.Logger.Error("discarding malformed Redis queue message", zap.String("id", queued.ID))
+		n.ackMessage(ctx, client, stream, group, queued.ID)
+		return
+	}
+
+	var message sqlc.Message
+	if err := json.Unmarshal([]byte(payload), &message); err != nil {
+		n.Logger.Error("discarding invalid Redis queue message", zap.String("id", queued.ID), zap.Error(err))
+		n.ackMessage(ctx, client, stream, group, queued.ID)
+		return
+	}
+
+	provider, err := n.ProviderService.GetProvider(message.ProviderID)
+	if err == nil {
+		err = n.SendMessage(provider, message)
+	}
+	if err != nil {
+		n.Logger.Error("failed to send queued message", zap.Int64("message_id", message.ID), zap.Error(err))
+		if markErr := n.MessageService.MarkMessageAsError(message.ID); markErr != nil {
+			n.Logger.Error("failed to mark message as error", zap.Int64("message_id", message.ID), zap.Error(markErr))
+		}
+		return
+	}
+	if err := n.MessageService.MarkMessageAsSuccess(message.ID); err != nil {
+		n.Logger.Error("failed to mark message as success", zap.Int64("message_id", message.ID), zap.Error(err))
+		return
+	}
+	n.ackMessage(ctx, client, stream, group, queued.ID)
+}
+
+func (n Notifier) ackMessage(ctx context.Context, client *goredis.Client, stream, group, id string) {
+	if err := client.XAck(ctx, stream, group, id).Err(); err != nil {
+		n.Logger.Error("failed to acknowledge Redis queue message", zap.String("id", id), zap.Error(err))
+		return
+	}
+	if err := client.XDel(ctx, stream, id).Err(); err != nil {
+		n.Logger.Error("failed to remove acknowledged Redis queue message", zap.String("id", id), zap.Error(err))
 	}
 }
 

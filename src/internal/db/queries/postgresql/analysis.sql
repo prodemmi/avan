@@ -19,7 +19,7 @@ FROM messages
 WHERE workspace_id = $1
   AND provider_id = $2;
 
--- name: GetTimeDistributionPostgresql :one
+-- name: GetTimeDistributionPostgresql :many
 WITH bounds AS (
     SELECT sqlc.narg('start_date')::timestamp AS start_date,
            sqlc.narg('end_date')::timestamp AS end_date

@@ -9,7 +9,7 @@ type MenuItem struct {
 
 templ MenuBar(base string, items []MenuItem) {
 	if len(items) > 0 {
-		<header class="bg-secondary text-white p-4">
+		<header class="admin-breadcrumbs">
 			<div class="flex gap-2">
 				if len(base) > 0 {
 					<b>{ base } :</b>

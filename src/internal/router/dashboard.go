@@ -29,6 +29,7 @@ func (r Router) GenerateDashboardRoutes() {
 	r.GenerateAuthRoutes(r.Server.Engine)
 	r.GenerateApiRoutes(r.Server.Engine)
 	r.GenerateApiKeyRoutes(dashboard)
+	r.GenerateUserRoutes(dashboard)
 	r.GenerateProviderRoutes(dashboard)
 	r.GenerateWorkspaceRoutes(dashboard)
 	r.GenerateTemplateRoutes(dashboard)

@@ -14,3 +14,9 @@ SELECT *
 FROM users
 WHERE id = $1
 LIMIT 1;
+
+-- name: GetUsersPostgresql :many
+SELECT id, name, email, mobile, created_at
+FROM users
+WHERE workspace_id = $1
+ORDER BY created_at DESC, id DESC;

@@ -37,6 +37,10 @@ func (a UserService) GetDefaultUser() (sqlc.User, error) {
 	return a.Repo.FindUserByID(ctx, 1)
 }
 
+func (a UserService) GetUsers(ctx context.Context, workspaceID int64) ([]sqlc.GetUsersPostgresqlRow, error) {
+	return a.Repo.ListUsers(ctx, workspaceID)
+}
+
 func NewUserService(repo repositories.UserRepository) UserService {
 	return UserService{Repo: repo}
 }

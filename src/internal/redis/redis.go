@@ -10,8 +10,13 @@ import (
 
 type Redis struct {
 	Config config.Config
-	client redis.Client
+	client *redis.Client
 }
+
+const (
+	MessageQueueStream = "avan:messages"
+	MessageQueueGroup  = "avan:consumers"
+)
 
 func NewRedis(config config.Config, logger zap.Logger) Redis {
 	ctx := context.Background()
@@ -25,5 +30,9 @@ func NewRedis(config config.Config, logger zap.Logger) Redis {
 		logger.Fatal("failed to ping redis", zap.Error(res.Err()))
 	}
 
-	return Redis{Config: config, client: *client}
+	return Redis{Config: config, client: client}
+}
+
+func (r Redis) Client() *redis.Client {
+	return r.client
 }

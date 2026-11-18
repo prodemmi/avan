@@ -44,9 +44,10 @@ func InitializeApp(appFlags config.AppFlags) App {
 	apiKeyRepository := repositories.NewApiKeyRepository(repository)
 	apiKeyService := services.NewApiKeyService(apiKeyRepository)
 	apiKeyHandler := handlers.NewApiKeyHandler(apiKeyService)
+	userService := services.NewUserService(userRepository)
+	userHandler := handlers.NewUserHandler(userService)
 	workspaceRepository := repositories.NewWorkspaceRepository(repository)
 	settingRepository := repositories.NewSettingRepository(repository)
-	userService := services.NewUserService(userRepository)
 	settingService := services.NewSettingService(settingRepository, userService)
 	workspaceService := services.NewWorkspaceService(workspaceRepository, settingService)
 	providerHandler := handlers.NewProviderHandler(providerService, workspaceService)
@@ -58,7 +59,7 @@ func InitializeApp(appFlags config.AppFlags) App {
 	analysisService := services.NewAnalysisService(analysisRepository, gossipService, messageService)
 	analysisHandler := handlers.NewAnalysisHandler(analysisService)
 	settingHandler := handlers.NewSettingHandler(settingService)
-	routerRouter := router.NewRouter(serverServer, zapLogger, authHandler, apiHandler, apiKeyHandler, providerHandler, workspaceHandler, templateHandler, messageHandler, analysisHandler, settingHandler)
+	routerRouter := router.NewRouter(serverServer, zapLogger, authHandler, apiHandler, apiKeyHandler, userHandler, providerHandler, workspaceHandler, templateHandler, messageHandler, analysisHandler, settingHandler)
 	app := NewApp(configConfig, serverServer, routerRouter, notifier, gossipService, userService, workspaceService, providerService)
 	return app
 }

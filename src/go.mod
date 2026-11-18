@@ -3,7 +3,6 @@ module avan
 go 1.24.0
 
 require (
-	github.com/IBM/sarama v1.45.1
 	github.com/a-h/templ v0.3.833
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v4 v4.5.1
