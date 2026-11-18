@@ -1,19 +1,5 @@
 version: "2"
 sql:
-  - schema: "internal/db/migrations/mysql/001_initialize_schema.sql"
-    queries: "internal/db/queries/mysql/"
-    engine: "mysql"
-    gen:
-      go:
-        package: "sqlc"
-        emit_db_tags: true
-        emit_interface: false
-        emit_json_tags: true
-        emit_enum_valid_method: true
-        emit_pointers_for_null_types: true
-        output_files_suffix: _mysql
-        out: "internal/db/sqlc/"
-
   - schema: "internal/db/migrations/postgresql/001_initialize_schema.sql"
     queries: "internal/db/queries/postgresql/"
     engine: "postgresql"
@@ -24,20 +10,50 @@ sql:
         emit_interface: false
         emit_json_tags: true
         emit_enum_valid_method: true
-        emit_pointers_for_null_types: true
         output_files_suffix: _postgresql
         out: "internal/db/sqlc/"
-
-  - schema: "internal/db/migrations/sqlite/001_initialize_schema.sql"
-    queries: "internal/db/queries/sqlite/"
-    engine: "sqlite"
-    gen:
-      go:
-        package: "sqlc"
-        emit_db_tags: true
-        emit_interface: false
-        emit_json_tags: true
-        emit_enum_valid_method: true
-        emit_pointers_for_null_types: true
-        output_files_suffix: _sqlite
-        out: "internal/db/sqlc/"
+        overrides:
+          - db_type: "pg_catalog.int4"
+            go_type: "int64"
+          - db_type: "pg_catalog.int4"
+            nullable: true
+            go_type:
+              type: "int64"
+              pointer: true
+          - db_type: "pg_catalog.varchar"
+            nullable: true
+            go_type:
+              type: "string"
+              pointer: true
+          - db_type: "pg_catalog.text"
+            nullable: true
+            go_type:
+              type: "string"
+              pointer: true
+          - db_type: "pg_catalog.timestamp"
+            nullable: true
+            go_type:
+              import: "time"
+              type: "Time"
+              pointer: true
+          - db_type: "pg_catalog.bool"
+            nullable: true
+            go_type:
+              type: "bool"
+              pointer: true
+          - column: "messages.template_id"
+            go_type:
+              type: "int64"
+              pointer: true
+          - column: "messages.error"
+            go_type:
+              type: "string"
+              pointer: true
+          - column: "settings.value"
+            go_type:
+              type: "string"
+              pointer: true
+          - column: "sms_configs.auth_token_value"
+            go_type:
+              type: "string"
+              pointer: true

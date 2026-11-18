@@ -10,90 +10,32 @@ type TemplateRepository struct {
 }
 
 func (w TemplateRepository) ListTemplates(ctx context.Context, workspaceID, ownerID int64) ([]sqlc.Template, error) {
-	switch w.Base.GetDBDialector() {
-	case "postgres":
-		return w.Base.DB.Queries.ListTemplatesPostgresql(ctx, sqlc.ListTemplatesPostgresqlParams{
-			WorkspaceID: workspaceID,
-			OwnerID:     ownerID,
-		})
-	case "mysql":
-		return w.Base.DB.Queries.ListTemplatesMysql(ctx, sqlc.ListTemplatesMysqlParams{
-			WorkspaceID: workspaceID,
-			OwnerID:     ownerID,
-		})
-	case "sqlite":
-		return w.Base.DB.Queries.ListTemplatesSqlite(ctx, sqlc.ListTemplatesSqliteParams{
-			WorkspaceID: workspaceID,
-			OwnerID:     ownerID,
-		})
-	}
-	return nil, nil
+	return w.Base.DB.Queries.ListTemplatesPostgresql(ctx, sqlc.ListTemplatesPostgresqlParams{
+		WorkspaceID: workspaceID,
+		OwnerID:     ownerID,
+	})
 }
 
 func (w TemplateRepository) UpdateTemplate(ctx context.Context, id int64, name, content string) error {
-	switch w.Base.GetDBDialector() {
-	case "mysql":
-		return w.Base.DB.Queries.UpdateTemplateMysql(ctx, sqlc.UpdateTemplateMysqlParams{
-			ID:      id,
-			Name:    name,
-			Content: content,
-		})
-	case "postgres":
-		return w.Base.DB.Queries.UpdateTemplatePostgresql(ctx, sqlc.UpdateTemplatePostgresqlParams{
-			ID:      int32(id),
-			Name:    name,
-			Content: content,
-		})
-	case "sqlite":
-		return w.Base.DB.Queries.UpdateTemplateSqlite(ctx, sqlc.UpdateTemplateSqliteParams{
-			ID:      id,
-			Name:    name,
-			Content: content,
-		})
-	}
-	return nil
+	return w.Base.DB.Queries.UpdateTemplatePostgresql(ctx, sqlc.UpdateTemplatePostgresqlParams{
+		ID:      id,
+		Name:    name,
+		Content: content,
+	})
 }
 
 func (w TemplateRepository) DeleteTemplate(ctx context.Context, id int64) error {
-	switch w.Base.GetDBDialector() {
-	case "mysql":
-		return w.Base.DB.Queries.DeleteTemplateMysql(ctx, id)
-	case "postgres":
-		return w.Base.DB.Queries.DeleteTemplatePostgresql(ctx, int32(id))
-	case "sqlite":
-		return w.Base.DB.Queries.DeleteTemplateSqlite(ctx, id)
-	}
-	return nil
+	return w.Base.DB.Queries.DeleteTemplatePostgresql(ctx, id)
 }
 
 func (w TemplateRepository) CreateTemplate(ctx context.Context, name string, content string, ownerID, workspaceID int64) (bool, error) {
 	var err error
-	switch w.Base.GetDBDialector() {
-	case "mysql":
-		err = w.Base.DB.Queries.CreateTemplateMysql(ctx, sqlc.CreateTemplateMysqlParams{
-			Name:        name,
-			WorkspaceID: workspaceID,
-			OwnerID:     ownerID,
-			Content:     content,
-		})
-		break
-	case "postgres":
-		err = w.Base.DB.Queries.CreateTemplatePostgresql(ctx, sqlc.CreateTemplatePostgresqlParams{
-			Name:        name,
-			WorkspaceID: workspaceID,
-			OwnerID:     ownerID,
-			Content:     content,
-		})
-		break
-	case "sqlite":
-		err = w.Base.DB.Queries.CreateTemplateSqlite(ctx, sqlc.CreateTemplateSqliteParams{
-			Name:        name,
-			WorkspaceID: workspaceID,
-			OwnerID:     ownerID,
-			Content:     content,
-		})
-		break
-	}
+	err = w.Base.DB.Queries.CreateTemplatePostgresql(ctx, sqlc.CreateTemplatePostgresqlParams{
+		Name:        name,
+		WorkspaceID: workspaceID,
+		OwnerID:     ownerID,
+		Content:     content,
+	})
 
 	if err != nil {
 		return false, err
@@ -104,17 +46,7 @@ func (w TemplateRepository) CreateTemplate(ctx context.Context, name string, con
 func (w TemplateRepository) FindTemplateByName(ctx context.Context, name string) (sqlc.Template, error) {
 	var template sqlc.Template
 	var err error
-	switch w.Base.GetDBDialector() {
-	case "mysql":
-		template, err = w.Base.DB.Queries.FindTemplateByNameMysql(ctx, name)
-		break
-	case "postgres":
-		template, err = w.Base.DB.Queries.FindTemplateByNamePostgresql(ctx, name)
-		break
-	case "sqlite":
-		template, err = w.Base.DB.Queries.FindTemplateByNameSqlite(ctx, name)
-		break
-	}
+	template, err = w.Base.DB.Queries.FindTemplateByNamePostgresql(ctx, name)
 
 	if err != nil {
 		return sqlc.Template{}, err
@@ -126,17 +58,7 @@ func (w TemplateRepository) FindTemplateByName(ctx context.Context, name string)
 func (w TemplateRepository) FindTemplateById(ctx context.Context, id int64) (sqlc.Template, error) {
 	var template sqlc.Template
 	var err error
-	switch w.Base.GetDBDialector() {
-	case "mysql":
-		template, err = w.Base.DB.Queries.FindTemplateByIdMysql(ctx, id)
-		break
-	case "postgres":
-		template, err = w.Base.DB.Queries.FindTemplateByIdPostgresql(ctx, int32(id))
-		break
-	case "sqlite":
-		template, err = w.Base.DB.Queries.FindTemplateByIdSqlite(ctx, id)
-		break
-	}
+	template, err = w.Base.DB.Queries.FindTemplateByIdPostgresql(ctx, id)
 
 	if err != nil {
 		return sqlc.Template{}, err

@@ -21,10 +21,9 @@ type AnalysisData struct {
 	SuccessRate      interface{}
 	ErrorRate        interface{}
 	AvgSendTime      interface{}
-	DatabaseType     string
 	ConsumerCount    int
-	ProvidersStats   map[string]sqlc.GetProviderStatsMysqlRow
-	TimeDistribution map[string]sqlc.GetTimeDistributionMysqlRow
+	ProvidersStats   map[string]sqlc.GetProviderStatsPostgresqlRow
+	TimeDistribution map[string]sqlc.GetTimeDistributionPostgresqlRow
 
 	NodesCount     int
 	HealthyNodes   int
@@ -137,7 +136,7 @@ func Index(data AnalysisData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s", data.AvgSendTime))
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", data.AvgSendTime))
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 83, Col: 64}
 		}
@@ -259,7 +258,7 @@ func Index(data AnalysisData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var14 string
-			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s", value.AvgSendTime))
+			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", value.AvgSendTime))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 121, Col: 71}
 			}
@@ -347,7 +346,7 @@ func Index(data AnalysisData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = SystemStatusCard(fmt.Sprintf("Database (%s)", data.DatabaseType), "Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = SystemStatusCard("Database (PostgreSQL)", "Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

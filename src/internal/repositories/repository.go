@@ -16,14 +16,6 @@ type Repository struct {
 	Logger zap.Logger
 }
 
-func (r Repository) GetDBDialector() string {
-	dbType := r.Config.DatabaseType
-	if dbType == "" {
-		r.Logger.Fatal("DB_TYPE environment variable is not set")
-	}
-	return dbType
-}
-
 func (r Repository) GetServiceURL() string {
 	domain := r.Config.ServerDomain
 	port := r.Config.ServerPort

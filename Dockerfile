@@ -32,6 +32,7 @@ FROM golang:1.24.0-alpine as FINAL
 WORKDIR /avan
 
 COPY --from=GOBUILDER /app/avan .
+COPY --from=GOBUILDER /app/internal/db/migrations/postgresql ./internal/db/migrations/postgresql/
 COPY --from=CSSBUILDER /app/public/ ./public/
 
 RUN chmod +x ./avan

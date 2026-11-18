@@ -16,9 +16,9 @@ import (
 type MessageService struct {
 	Repo                         repositories.MessageRepository
 	MessageCache                 redis.Cache[sqlc.Message]
-	MessageSummaryCache          redis.Cache[sqlc.MessageSummaryMysqlRow]
-	MessageProvidersStatsCache   redis.Cache[map[string]sqlc.GetProviderStatsMysqlRow]
-	MessageTimeDistributionCache redis.Cache[map[string]sqlc.GetTimeDistributionMysqlRow]
+	MessageSummaryCache          redis.Cache[sqlc.MessageSummaryPostgresqlRow]
+	MessageProvidersStatsCache   redis.Cache[map[string]sqlc.GetProviderStatsPostgresqlRow]
+	MessageTimeDistributionCache redis.Cache[map[string]sqlc.GetTimeDistributionPostgresqlRow]
 	MessageCountCache            redis.Cache[int64]
 	WorkspaceService             WorkspaceService
 	TemplateService              TemplateService
@@ -49,28 +49,28 @@ func (w MessageService) MessageCount(workspaceID int64, providerID *int64, templ
 	})
 }
 
-func (w MessageService) GetMessageSummary(workspaceID int64) (sqlc.MessageSummaryMysqlRow, error) {
+func (w MessageService) GetMessageSummary(workspaceID int64) (sqlc.MessageSummaryPostgresqlRow, error) {
 	ctx := context.Background()
 	key := w.MessageSummaryCache.GetKey("messages", "summary", workspaceID)
-	return w.MessageSummaryCache.GetOrSet(key, time.Second*5, func() (sqlc.MessageSummaryMysqlRow, error) {
+	return w.MessageSummaryCache.GetOrSet(key, time.Second*5, func() (sqlc.MessageSummaryPostgresqlRow, error) {
 		return w.Repo.GetMessageSummary(ctx, workspaceID)
 	})
 }
 
-func (w MessageService) GetProvidersStats(workspaceID, ownerID int64) (map[string]sqlc.GetProviderStatsMysqlRow, error) {
+func (w MessageService) GetProvidersStats(workspaceID, ownerID int64) (map[string]sqlc.GetProviderStatsPostgresqlRow, error) {
 	ctx := context.Background()
 	key := w.MessageProvidersStatsCache.GetKey("messages", "provider-stats", workspaceID)
-	return w.MessageProvidersStatsCache.GetOrSet(key, time.Second*5, func() (map[string]sqlc.GetProviderStatsMysqlRow, error) {
+	return w.MessageProvidersStatsCache.GetOrSet(key, time.Second*5, func() (map[string]sqlc.GetProviderStatsPostgresqlRow, error) {
 		providers, err := w.ProviderService.GetProviders(workspaceID, ownerID)
 		if err != nil {
-			return map[string]sqlc.GetProviderStatsMysqlRow{}, nil
+			return map[string]sqlc.GetProviderStatsPostgresqlRow{}, nil
 		}
-		data := make(map[string]sqlc.GetProviderStatsMysqlRow)
+		data := make(map[string]sqlc.GetProviderStatsPostgresqlRow)
 
 		for _, provider := range providers {
-			result, err := w.Repo.GetProviderStatsMysql(ctx, workspaceID, provider.ID)
+			result, err := w.Repo.GetProviderStats(ctx, workspaceID, provider.ID)
 			if err != nil {
-				return map[string]sqlc.GetProviderStatsMysqlRow{}, nil
+				return map[string]sqlc.GetProviderStatsPostgresqlRow{}, nil
 			}
 			data[provider.Name] = result
 		}
@@ -78,20 +78,20 @@ func (w MessageService) GetProvidersStats(workspaceID, ownerID int64) (map[strin
 	})
 }
 
-func (w MessageService) GetTimeDistribution(workspaceID, ownerID int64, startDate, endDate *time.Time) (map[string]sqlc.GetTimeDistributionMysqlRow, error) {
+func (w MessageService) GetTimeDistribution(workspaceID, ownerID int64, startDate, endDate *time.Time) (map[string]sqlc.GetTimeDistributionPostgresqlRow, error) {
 	ctx := context.Background()
 	key := w.MessageTimeDistributionCache.GetKey("messages", "provider-distribution", workspaceID)
-	return w.MessageTimeDistributionCache.GetOrSet(key, time.Second*5, func() (map[string]sqlc.GetTimeDistributionMysqlRow, error) {
+	return w.MessageTimeDistributionCache.GetOrSet(key, time.Second*5, func() (map[string]sqlc.GetTimeDistributionPostgresqlRow, error) {
 		providers, err := w.ProviderService.GetProviders(workspaceID, ownerID)
 		if err != nil {
-			return map[string]sqlc.GetTimeDistributionMysqlRow{}, nil
+			return map[string]sqlc.GetTimeDistributionPostgresqlRow{}, nil
 		}
-		data := make(map[string]sqlc.GetTimeDistributionMysqlRow)
+		data := make(map[string]sqlc.GetTimeDistributionPostgresqlRow)
 
 		for _, provider := range providers {
 			result, err := w.Repo.GetTimeDistribution(ctx, workspaceID, provider.ID, startDate, endDate)
 			if err != nil {
-				return map[string]sqlc.GetTimeDistributionMysqlRow{}, nil
+				return map[string]sqlc.GetTimeDistributionPostgresqlRow{}, nil
 			}
 			data[provider.Name] = result
 		}
@@ -279,9 +279,9 @@ func (w MessageService) MarkMessageAsError(messageID int64) error {
 func NewMessageService(repo repositories.MessageRepository, templateService TemplateService, providerService ProviderService) MessageService {
 	messageCache := redis.NewCache[sqlc.Message](repo.Base.Redis)
 	messageCountCache := redis.NewCache[int64](repo.Base.Redis)
-	messageSummaryCache := redis.NewCache[sqlc.MessageSummaryMysqlRow](repo.Base.Redis)
-	messageProvidersStatsCache := redis.NewCache[map[string]sqlc.GetProviderStatsMysqlRow](repo.Base.Redis)
-	messageTimeDistributionCache := redis.NewCache[map[string]sqlc.GetTimeDistributionMysqlRow](repo.Base.Redis)
+	messageSummaryCache := redis.NewCache[sqlc.MessageSummaryPostgresqlRow](repo.Base.Redis)
+	messageProvidersStatsCache := redis.NewCache[map[string]sqlc.GetProviderStatsPostgresqlRow](repo.Base.Redis)
+	messageTimeDistributionCache := redis.NewCache[map[string]sqlc.GetTimeDistributionPostgresqlRow](repo.Base.Redis)
 
 	return MessageService{
 		Repo:                         repo,

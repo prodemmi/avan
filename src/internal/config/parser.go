@@ -21,7 +21,6 @@ type Config struct {
 
 	WorkspaceDefaultName string `yaml:"workspace.default.name"`
 
-	DatabaseType     string `yaml:"database.type"`
 	DatabaseName     string `yaml:"database.name"`
 	DatabaseHost     string `yaml:"database.host"`
 	DatabaseSSLMode  string `yaml:"database.ssl_mode"`
@@ -112,9 +111,9 @@ func NewConfig(appFlags AppFlags) Config {
 // replaceEnvVariables replaces ${ENV_VAR} placeholders with actual environment variable values
 func replaceEnvVariables(config *Config) {
 	// Auth
-	config.DatabaseType = replaceEnv(config.DatabaseType)
 	config.DatabaseName = replaceEnv(config.DatabaseName)
 	config.DatabaseHost = replaceEnv(config.DatabaseHost)
+	config.DatabaseSSLMode = replaceEnv(config.DatabaseSSLMode)
 	config.DatabasePort = replaceEnvInt(config.DatabasePort)
 	config.DatabaseUser = replaceEnv(config.DatabaseUser)
 	config.DatabasePassword = replaceEnv(config.DatabasePassword)
