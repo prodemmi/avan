@@ -6,12 +6,12 @@ import (
 )
 
 templ SidebarItem(title string, url string, icon string) {
-	<div class="flex items-baseline gap-2 text-white dark:text-gray-300">
+	<a class="admin-nav-link" href={ templ.URL(url) } aria-label={ title } title={ title }>
 		if len(icon) > 0 {
-			<i class={ fmt.Sprintf("%s ri-lg", icon) }></i>
+			<i class={ fmt.Sprintf("%s ri-lg", icon) } aria-hidden="true"></i>
 		}
-		<a href={ templ.URL(url) }>{ title }</a>
-	</div>
+		<span>{ title }</span>
+	</a>
 }
 
 templ Sidebar() {
@@ -23,27 +23,32 @@ templ Sidebar() {
 		}
 	}}
 
-	<aside class="block h-dvh text-white p-4 dark:bg-gray-800 dark:text-gray-300" style={ fmt.Sprintf("width: 16dvw;background-color: %s", primaryColor) }>
-		<h1 class="text-2xl">Avan</h1>
-		<h3 class="text-md mt-2 mb-4">
-			Workspace:
-			<b>{ ctx.Value("workspace").(sqlc.Workspace).Name }</b>
-		</h3>
-		<div class="flex flex-col justify-between h-full">
-			<div class="flex flex-col gap-2">
+	<aside class="admin-sidebar text-white dark:text-gray-300" style={ fmt.Sprintf("background-color: %s", primaryColor) }>
+		<a href="/dashboard/" class="admin-brand" aria-label="Avan home">
+			<span class="admin-brand-mark">A</span>
+			<span class="admin-brand-name">Avan</span>
+		</a>
+		<div class="admin-workspace">
+			<span class="admin-sidebar-caption">WORKSPACE</span>
+			<strong>{ ctx.Value("workspace").(sqlc.Workspace).Name }</strong>
+		</div>
+		<div class="admin-nav-wrap">
+			<span class="admin-sidebar-caption">OVERVIEW</span>
+			<nav class="admin-nav">
 				@SidebarItem("Home", "/dashboard/", "ri-home-2-fill")
 				@SidebarItem("Messages", "/dashboard/messages?page=0", "ri-chat-3-line")
 				@SidebarItem("Templates", "/dashboard/templates?page=0", "ri-layout-horizontal-line")
 				@SidebarItem("Providers", "/dashboard/providers?page=0", "ri-bank-line")
 				@SidebarItem("Analysis & Service Health", "/dashboard/analysis", "ri-pie-chart-2-line")
-			</div>
-			<div class="flex flex-col gap-2 mb-18">
-				@SidebarItem("Users", "/dashboard/users", "")
-				@SidebarItem("API Keys", "/dashboard/api-keys", "")
-				@SidebarItem("Workspaces", "/dashboard/workspaces", "")
-				@SidebarItem("Settings", "/dashboard/settings", "")
-				@SidebarItem("Logout", "/auth/logout", "")
-			</div>
+			</nav>
+			<span class="admin-sidebar-caption admin-sidebar-caption-manage">MANAGE</span>
+			<nav class="admin-nav">
+				@SidebarItem("Users", "/dashboard/users", "ri-user-3-line")
+				@SidebarItem("API Keys", "/dashboard/api-keys", "ri-key-2-line")
+				@SidebarItem("Workspaces", "/dashboard/workspaces", "ri-building-2-line")
+				@SidebarItem("Settings", "/dashboard/settings", "ri-settings-3-line")
+			</nav>
 		</div>
+		<a class="admin-logout" href="/auth/logout"><i class="ri-logout-box-r-line" aria-hidden="true"></i><span>Logout</span></a>
 	</aside>
 }

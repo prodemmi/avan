@@ -23,7 +23,10 @@ type AnalysisData struct {
 	AvgSendTime      interface{}
 	ConsumerCount    int
 	ProvidersStats   map[string]sqlc.GetProviderStatsPostgresqlRow
-	TimeDistribution map[string]sqlc.GetTimeDistributionPostgresqlRow
+	TimeDistribution map[string][]sqlc.GetTimeDistributionPostgresqlRow
+	Range            string
+	StartDate        string
+	EndDate          string
 
 	NodesCount     int
 	HealthyNodes   int
@@ -55,239 +58,45 @@ func Index(data AnalysisData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		refreshTimeOptions := []components.SelectOption{
-			{Value: "5", Label: "5 Seconds"},
-			{Value: "10", Label: "10 Seconds"},
-			{Value: "15", Label: "15 Seconds"},
-			{Value: "30", Label: "30 Seconds"},
-			{Value: "60", Label: "1 Minute"},
-			{Value: "120", Label: "2 Minute"},
-			{Value: "450", Label: "5 Minute"},
-		}
-		templ_7745c5c3_Err = components.Select("", refreshTimeOptions, "last_hour").Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<!-- Custom Date Range Picker -->")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
 		timeRangeOptions := []components.SelectOption{
 			{Value: "last_hour", Label: "Last Hour"},
-			{Value: "last_s_hours", Label: "Last 2 Hours"},
+			{Value: "last_2_hours", Label: "Last 2 Hours"},
 			{Value: "last_24_hours", Label: "Last 24 Hours"},
 			{Value: "last_7_days", Label: "Last 7 Days"},
 			{Value: "last_30_days", Label: "Last Month"},
 			{Value: "custom", Label: "Custom Range"},
 		}
-		templ_7745c5c3_Err = components.Select("timestamp_range", timeRangeOptions, "last_hour").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Select("range", timeRangeOptions, data.Range).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<!-- Custom Date Range Picker --><div id=\"custom_range\" class=\"hidden flex gap-4\"><input name=\"start_date\" type=\"date\" id=\"startDate\" class=\"p-2 bg-white rounded dark:bg-gray-600\"> <input name=\"end_date\" type=\"date\" id=\"endDate\" class=\"p-2 bg-white rounded dark:bg-gray-600\"></div></div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = components.SubmitButton("Filter").Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div><!-- First Section with Title --><div class=\"p-4 bg-white rounded-lg shadow-md dark:bg-gray-700\"><h3 class=\"text-xl font-bold mb-3\">Message Summary</h3><div class=\"grid grid-cols-3 gap-4 mt-4 w-full text-sm\"><div class=\"p-4 bg-blue-300 rounded text-center w-full dark:bg-blue-600\"><p class=\"font-semibold text-black dark:text-white\">Total</p><p class=\"font-bold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"custom_range\" class=\"hidden flex gap-4\"><label for=\"startDate\">From <input name=\"start_date\" type=\"date\" id=\"startDate\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.TotalMessages))
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(data.StartDate)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 71, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 47, Col: 109}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</p></div><div class=\"p-4 bg-green-300 rounded text-center w-full dark:bg-green-600\"><p class=\"font-semibold text-black dark:text-white\">Success</p><p class=\"font-bold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"></label> <label for=\"endDate\">To <input name=\"end_date\" type=\"date\" id=\"endDate\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.SuccessMessages))
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(data.EndDate)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 75, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 48, Col: 99}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></div><div class=\"p-4 bg-red-300 rounded text-center w-full dark:bg-red-600\"><p class=\"font-semibold text-black dark:text-white\">Failed</p><p class=\"font-bold\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.FailedMessages))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 79, Col: 60}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</p></div><div class=\"p-4 bg-blue-100 rounded text-center w-full dark:bg-blue-400\"><p class=\"font-semibold text-black dark:text-white\">Avg Send Time</p><p class=\"font-bold\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", data.AvgSendTime))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 83, Col: 64}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "s</p></div><div class=\"p-4 bg-green-100 rounded text-center w-full dark:bg-green-400\"><p class=\"font-semibold text-black dark:text-white\">Success Rate</p><p class=\"font-bold\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v%%", data.SuccessRate))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 87, Col: 66}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</p></div><div class=\"p-4 bg-red-100 rounded text-center w-full dark:bg-red-400\"><p class=\"font-semibold text-black dark:text-white\">Error Rate</p><p class=\"font-bold\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f%%", data.ErrorRate))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 91, Col: 66}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</p></div></div></div><!-- Providers Statistics Table --><div class=\"p-4 flex w-full gap-4 bg-white rounded-lg shadow-md dark:bg-gray-700\"><div class=\"w-full mt-3\"><h3 class=\"text-xl font-bold mb-3\">Providers Statistics</h3><div class=\"overflow-x-auto\"><table class=\"min-w-full table-auto border-collapse dark:bg-gray-600\"><thead><tr class=\"bg-gray-200 dark:bg-gray-700\"><th class=\"px-3 py-2 text-start font-bold\">Provider</th><th class=\"px-3 py-2 text-center font-bold\">Total</th><th class=\"px-3 py-2 text-center font-bold\">Success</th><th class=\"px-3 py-2 text-center font-bold\">Failed</th><th class=\"px-3 py-2 text-center font-bold\">Success Rate</th><th class=\"px-3 py-2 text-center font-bold\">Error Rate</th><th class=\"px-3 py-2 text-end font-bold\">Avg Send Time</th></tr></thead> <tbody>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		for provider, value := range data.ProvidersStats {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<tr><td class=\"p-2 text-start\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var8 string
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(provider))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 115, Col: 57}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</td><td class=\"p-2 text-center\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(value.Total))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 116, Col: 61}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</td><td class=\"p-2 text-center bg-green-100 dark:bg-green-600\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var10 string
-			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(value.Success))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 117, Col: 94}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</td><td class=\"p-2 text-center bg-red-100 dark:bg-red-600\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var11 string
-			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(value.Failed))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 118, Col: 89}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</td><td class=\"p-2 text-center bg-green-100 dark:bg-green-600\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var12 string
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f%%", value.SuccessRate))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 119, Col: 109}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</td><td class=\"p-2 text-center bg-red-100 dark:bg-red-600\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var13 string
-			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f%%", value.ErrorRate))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 120, Col: 103}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</td><td class=\"p-2 text-end\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var14 string
-			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", value.AvgSendTime))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 121, Col: 71}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "s</td></tr>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</tbody></table></div></div><!-- Providers Usage Pie Chart --><div class=\"flex flex-col w-1/2 mt-3\"><h3 class=\"text-xl font-bold mb-3\">Providers Usage</h3><div><canvas id=\"providersChart\"></canvas></div></div></div><!-- Message Distribution Over Time --><div class=\"p-4 bg-white rounded-lg shadow-md dark:bg-gray-700\"><div class=\"flex justify-between\"><h3 class=\"text-xl font-bold mb-3\">Message Distribution Over Time</h3><div class=\"flex justify-between gap-4\"><div class=\"flex items-center w-full gap-2\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		options := []components.SelectOption{
-			{Value: "0", Label: "Success"},
-			{Value: "2", Label: "Failed"},
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<label for=\"date_range\">Type</label>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = components.Select("type", options, "0").Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"></label></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -295,50 +104,229 @@ func Index(data AnalysisData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</div></div><canvas id=\"timeDistributionChart\" class=\"w-full h-48\"></canvas></div><!-- Service Health Section --><div class=\"p-4 bg-white rounded-lg shadow-md mt-4 dark:bg-gray-700\"><b class=\"text-xl font-bold mb-3\">Service Health</b><div class=\"grid grid-cols-3 gap-4 mt-4 w-full text-sm\"><div class=\"p-4 bg-gray-300 rounded text-center w-full dark:bg-gray-600\"><p class=\"font-semibold text-black dark:text-white\">Total Nodes</p><p class=\"font-bold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div><!-- First Section with Title --><div class=\"p-4 bg-white rounded-lg shadow-md dark:bg-gray-700\"><h3 class=\"text-xl font-bold mb-3\">Message Summary</h3><div class=\"grid grid-cols-3 gap-4 mt-4 w-full text-sm\"><div class=\"p-4 bg-blue-300 rounded text-center w-full dark:bg-blue-600\"><p class=\"font-semibold text-black dark:text-white\">Total</p><p class=\"font-bold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var15 string
-		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.NodesCount))
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.TotalMessages))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 163, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 60, Col: 59}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</p></div><div class=\"p-4 bg-green-300 rounded text-center w-full dark:bg-green-600\"><p class=\"font-semibold text-black dark:text-white\">Healthy Nodes</p><p class=\"font-bold\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var16 string
-		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.HealthyNodes))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 167, Col: 58}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></div><div class=\"p-4 bg-green-300 rounded text-center w-full dark:bg-green-600\"><p class=\"font-semibold text-black dark:text-white\">Success</p><p class=\"font-bold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</p></div><div class=\"p-4 bg-red-300 rounded text-center w-full dark:bg-red-600\"><p class=\"font-semibold text-black dark:text-white\">Unhealthy Nodes</p><p class=\"font-bold\">")
+		var templ_7745c5c3_Var5 string
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.SuccessMessages))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 64, Col: 61}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</p></div><div class=\"p-4 bg-red-300 rounded text-center w-full dark:bg-red-600\"><p class=\"font-semibold text-black dark:text-white\">Failed</p><p class=\"font-bold\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var6 string
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.FailedMessages))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 68, Col: 60}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</p></div><div class=\"p-4 bg-blue-100 rounded text-center w-full dark:bg-blue-400\"><p class=\"font-semibold text-black dark:text-white\">Avg Send Time</p><p class=\"font-bold\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var7 string
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", data.AvgSendTime))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 72, Col: 64}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "s</p></div><div class=\"p-4 bg-green-100 rounded text-center w-full dark:bg-green-400\"><p class=\"font-semibold text-black dark:text-white\">Success Rate</p><p class=\"font-bold\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var8 string
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v%%", data.SuccessRate))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 76, Col: 66}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</p></div><div class=\"p-4 bg-red-100 rounded text-center w-full dark:bg-red-400\"><p class=\"font-semibold text-black dark:text-white\">Error Rate</p><p class=\"font-bold\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f%%", data.ErrorRate))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 80, Col: 66}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</p></div></div></div><!-- Providers Statistics Table --><div class=\"p-4 flex w-full gap-4 bg-white rounded-lg shadow-md dark:bg-gray-700\"><div class=\"w-full mt-3\"><h3 class=\"text-xl font-bold mb-3\">Providers Statistics</h3><div class=\"overflow-x-auto\"><table class=\"min-w-full table-auto border-collapse dark:bg-gray-600\"><thead><tr class=\"bg-gray-200 dark:bg-gray-700\"><th class=\"px-3 py-2 text-start font-bold\">Provider</th><th class=\"px-3 py-2 text-center font-bold\">Total</th><th class=\"px-3 py-2 text-center font-bold\">Success</th><th class=\"px-3 py-2 text-center font-bold\">Failed</th><th class=\"px-3 py-2 text-center font-bold\">Success Rate</th><th class=\"px-3 py-2 text-center font-bold\">Error Rate</th><th class=\"px-3 py-2 text-end font-bold\">Avg Send Time</th></tr></thead> <tbody>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for provider, value := range data.ProvidersStats {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<tr><td class=\"p-2 text-start\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var10 string
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(provider))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 104, Col: 57}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</td><td class=\"p-2 text-center\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var11 string
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(value.Total))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 105, Col: 61}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</td><td class=\"p-2 text-center bg-green-100 dark:bg-green-600\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var12 string
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(value.Success))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 106, Col: 94}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</td><td class=\"p-2 text-center bg-red-100 dark:bg-red-600\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var13 string
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(value.Failed))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 107, Col: 89}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</td><td class=\"p-2 text-center bg-green-100 dark:bg-green-600\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var14 string
+			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f%%", value.SuccessRate))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 108, Col: 109}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</td><td class=\"p-2 text-center bg-red-100 dark:bg-red-600\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var15 string
+			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f%%", value.ErrorRate))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 109, Col: 103}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</td><td class=\"p-2 text-end\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var16 string
+			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", value.AvgSendTime))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 110, Col: 71}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "s</td></tr>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</tbody></table></div></div><!-- Providers Usage Pie Chart --><div class=\"flex flex-col w-1/2 mt-3\"><h3 class=\"text-xl font-bold mb-3\">Providers Usage</h3><div><canvas id=\"providersChart\"></canvas></div></div></div><!-- Message Distribution Over Time --><div class=\"p-4 bg-white rounded-lg shadow-md dark:bg-gray-700\"><div class=\"flex justify-between\"><h3 class=\"text-xl font-bold mb-3\">Message Distribution Over Time</h3></div><canvas id=\"timeDistributionChart\" class=\"w-full h-48\"></canvas></div><!-- Service Health Section --><div class=\"p-4 bg-white rounded-lg shadow-md mt-4 dark:bg-gray-700\"><b class=\"text-xl font-bold mb-3\">Service Health</b><div class=\"grid grid-cols-3 gap-4 mt-4 w-full text-sm\"><div class=\"p-4 bg-gray-300 rounded text-center w-full dark:bg-gray-600\"><p class=\"font-semibold text-black dark:text-white\">Total Nodes</p><p class=\"font-bold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 string
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.UnhealthyNodes))
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.NodesCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 171, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 138, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</p></div></div></div><!-- System Status --><div class=\"bg-white shadow-md rounded-lg p-6 mt-4 dark:bg-gray-700\"><h2 class=\"text-xl font-bold mb-4\">System Status</h2><div class=\"grid grid-cols-2 gap-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</p></div><div class=\"p-4 bg-green-300 rounded text-center w-full dark:bg-green-600\"><p class=\"font-semibold text-black dark:text-white\">Healthy Nodes</p><p class=\"font-bold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = SystemStatusCard("Kafka", "Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
+		var templ_7745c5c3_Var18 string
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.HealthyNodes))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 142, Col: 58}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</p></div><div class=\"p-4 bg-red-300 rounded text-center w-full dark:bg-red-600\"><p class=\"font-semibold text-black dark:text-white\">Unhealthy Nodes</p><p class=\"font-bold\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var19 string
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(data.UnhealthyNodes))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 146, Col: 60}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</p></div></div></div><!-- System Status --><div class=\"bg-white shadow-md rounded-lg p-6 mt-4 dark:bg-gray-700\"><h2 class=\"text-xl font-bold mb-4\">System Status</h2><div class=\"grid grid-cols-2 gap-4\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = SystemStatusCard("Redis Queue", "Connected", "green").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -354,20 +342,20 @@ func Index(data AnalysisData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</div></div><!-- Hidden div to pass data --><div id=\"data\" data-value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></div><!-- Hidden div to pass data --><div id=\"data\" data-value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var18 string
-		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(templ.JSONString(data))
+		var templ_7745c5c3_Var20 string
+		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(templ.JSONString(data))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 186, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 161, Col: 53}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\"></div></div></form><script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script><script>\n\tdocument.addEventListener(\"DOMContentLoaded\", function () {\n\t\tconst dataElement = document.getElementById(\"data\");\n\t\tconst data = JSON.parse(dataElement.getAttribute(\"data-value\"));\n\n\t\tconst timeCtx = document.getElementById('timeDistributionChart').getContext('2d');\n\t\tconst providersCtx = document.getElementById('providersChart').getContext('2d');\n\n\t\t// Time Distribution Bar Chart\n\t\tconst datasets = Object.keys(data.TimeDistribution).map((provider, i) => ({\n\t\t\tlabel: provider,\n\t\t\tdata: Object.values(data.TimeDistribution[provider]),\n\t\t\tbackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'][i]\n\t\t}));\n\n\t\tnew Chart(timeCtx, {\n\t\t\ttype: 'bar',\n\t\t\tdata: {\n\t\t\t\tlabels: Object.keys(data.TimeDistribution[Object.keys(data.TimeDistribution)[0]]),\n\t\t\t\tdatasets: datasets\n\t\t\t},\n\t\t\toptions: {\n\t\t\t\tscales: {\n\t\t\t\t\ty: { beginAtZero: true }\n\t\t\t\t}\n\t\t\t}\n\t\t});\n\n\t\t// Providers Pie Chart\n\t\tnew Chart(providersCtx, {\n\t\t\ttype: 'pie',\n\t\t\tdata: {\n\t\t\t\tlabels: Object.keys(data.ProvidersStats),\n\t\t\t\tdatasets: [{\n\t\t\t\t\tdata: Object.values(data.ProvidersStats).map(value => value.total),\n\t\t\t\t\tbackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']\n\t\t\t\t}]\n\t\t\t}\n\t\t});\n\n\t\tconst timestampRangeSelect = document.getElementById('timestamp_range');\n\t\tconst customRange = document.getElementById('custom_range');\n\n\t\t// Show custom date range inputs when \"Custom Range\" is selected\n\t\ttimestampRangeSelect.addEventListener('change', function () {\n\t\t\tif (timestampRangeSelect.value === 'custom') {\n\t\t\t\tcustomRange.classList.remove('hidden');\n\t\t\t} else {\n\t\t\t\tcustomRange.classList.add('hidden');\n\t\t\t}\n\t\t});\n\t});\n</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\"></div></div></form><script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script><script>\n\tdocument.addEventListener(\"DOMContentLoaded\", function () {\n\t\tconst dataElement = document.getElementById(\"data\");\n\t\tconst data = JSON.parse(dataElement.getAttribute(\"data-value\"));\n\n\t\tconst timeCtx = document.getElementById('timeDistributionChart').getContext('2d');\n\t\tconst providersCtx = document.getElementById('providersChart').getContext('2d');\n\n\t\t// Time Distribution Bar Chart\n\t\tconst series = data.TimeDistribution || {};\n\t\tconst providers = Object.keys(series);\n\t\tconst buckets = [...new Set(providers.flatMap(provider => (series[provider] || []).map(row => row.time_bucket)))].sort();\n\t\tconst colors = ['#76558e', '#6e8e59', '#c47d55', '#5485a0', '#b75b6d'];\n\t\tconst datasets = providers.map((provider, i) => ({\n\t\t\tlabel: provider,\n\t\t\tdata: buckets.map(bucket => (series[provider] || []).find(row => row.time_bucket === bucket)?.message_count ?? 0),\n\t\t\tbackgroundColor: colors[i % colors.length]\n\t\t}));\n\n\t\tnew Chart(timeCtx, {\n\t\t\ttype: 'bar',\n\t\t\tdata: {\n\t\t\t\tlabels: buckets,\n\t\t\t\tdatasets: datasets\n\t\t\t},\n\t\t\toptions: {\n\t\t\t\tscales: {\n\t\t\t\t\ty: { beginAtZero: true }\n\t\t\t\t}\n\t\t\t}\n\t\t});\n\n\t\t// Providers Pie Chart\n\t\tconst providerStats = data.ProvidersStats || {};\n\t\tnew Chart(providersCtx, {\n\t\t\ttype: 'pie',\n\t\t\tdata: {\n\t\t\t\tlabels: Object.keys(providerStats),\n\t\t\t\tdatasets: [{\n\t\t\t\t\tdata: Object.values(providerStats).map(value => value.total),\n\t\t\t\t\tbackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']\n\t\t\t\t}]\n\t\t\t}\n\t\t});\n\n\t\tconst timestampRangeSelect = document.getElementById('range');\n\t\tconst customRange = document.getElementById('custom_range');\n\n\t\tconst updateDateRange = () => customRange.classList.toggle('hidden', timestampRangeSelect.value !== 'custom');\n\t\tupdateDateRange();\n\t\ttimestampRangeSelect.addEventListener('change', updateDateRange);\n\t});\n</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -391,60 +379,60 @@ func SystemStatusCard(service string, status string, color string) templ.Compone
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var19 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var19 == nil {
-			templ_7745c5c3_Var19 = templ.NopComponent
+		templ_7745c5c3_Var21 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var21 == nil {
+			templ_7745c5c3_Var21 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<div class=\"bg-white p-4 rounded-lg flex justify-between dark:bg-gray-700\"><span class=\"font-bold\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(service)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 247, Col: 35}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</span> ")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var21 = []any{"text-" + color + "-500"}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var21...)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<span class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<div class=\"bg-white p-4 rounded-lg flex justify-between dark:bg-gray-700\"><span class=\"font-bold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var22 string
-		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var21).String())
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(service)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 1, Col: 0}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 222, Col: 35}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(status)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 248, Col: 51}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
+		var templ_7745c5c3_Var23 = []any{"text-" + color + "-500"}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var23...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</span></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<span class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var24 string
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var23).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var25 string
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(status)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/analysis/index.templ`, Line: 223, Col: 51}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</span></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

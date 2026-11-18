@@ -7,8 +7,8 @@ auth.token.expire_time: 172800
 # Server configuration
 # Application running port (default is 9090)
 # Domain for the server (set to your server's domain)
-server.port: 9090
-server.domain: localhost
+server.port: ${SERVER_PORT}
+server.domain: ${SERVER_DOMAIN}
 
 # Admin credentials
 # Admin email for admin login
@@ -35,27 +35,16 @@ database.user: ${DB_USER}
 database.password: ${DB_PASSWORD}
 
 # Redis configuration
-# Redis server host address (default is localhost)
-redis.host: localhost
-# Redis server port number (default is 6379)
-redis.port: 6379
+# Redis server host address
+redis.host: ${REDIS_HOST}
+# Redis server port number
+redis.port: ${REDIS_PORT}
 # Redis password (empty means no password)
 redis.password: ""
-# Redis database index (default is 0)
-redis.db: 0
-
-# kafka configuration
-# kafka brokers list
-kafka.brokers:
-  - localhost:9092
-# kafka topic name
-kafka.topic: avan_messages
-
-# Number of Kafka consumers per service.
-# Default is 1. Increase for higher processing speed.
-# Note: A high value may impact server performance.
-# Cannot be set to 0.
-kafka.consumer.count: 1
+# Redis database index
+redis.db: ${REDIS_DB}
+# Total number of consumer containers to run in Docker Compose
+redis.consumer.count: ${CONSUMER_COUNT}
 
 # List of other clients to high scaling the service.
 # Each node discovered and communicated by gossip protocol.

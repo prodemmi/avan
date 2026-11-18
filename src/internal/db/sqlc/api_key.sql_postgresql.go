@@ -35,11 +35,16 @@ func (q *Queries) CreateAPIKeyPostgresql(ctx context.Context, arg CreateAPIKeyPo
 }
 
 const deleteAPIKeyPostgresql = `-- name: DeleteAPIKeyPostgresql :exec
-DELETE FROM api_keys WHERE id = $1
+DELETE FROM api_keys WHERE id = $1 AND workspace_id = $2
 `
 
-func (q *Queries) DeleteAPIKeyPostgresql(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteAPIKeyPostgresql, id)
+type DeleteAPIKeyPostgresqlParams struct {
+	ID          int64 `db:"id" json:"id"`
+	WorkspaceID int64 `db:"workspace_id" json:"workspace_id"`
+}
+
+func (q *Queries) DeleteAPIKeyPostgresql(ctx context.Context, arg DeleteAPIKeyPostgresqlParams) error {
+	_, err := q.db.ExecContext(ctx, deleteAPIKeyPostgresql, arg.ID, arg.WorkspaceID)
 	return err
 }
 
@@ -69,17 +74,12 @@ func (q *Queries) FindAPIKeyPostgresql(ctx context.Context, apiKey string) (ApiK
 const getApiKeysPostgresql = `-- name: GetApiKeysPostgresql :many
 SELECT id, workspace_id, owner_id, name, api_key, expire_at, created_at, updated_at
 from api_keys
-WHERE workspace_id = $1 AND owner_id = $2
+WHERE workspace_id = $1
 ORDER BY created_at DESC
 `
 
-type GetApiKeysPostgresqlParams struct {
-	WorkspaceID int64 `db:"workspace_id" json:"workspace_id"`
-	OwnerID     int64 `db:"owner_id" json:"owner_id"`
-}
-
-func (q *Queries) GetApiKeysPostgresql(ctx context.Context, arg GetApiKeysPostgresqlParams) ([]ApiKey, error) {
-	rows, err := q.db.QueryContext(ctx, getApiKeysPostgresql, arg.WorkspaceID, arg.OwnerID)
+func (q *Queries) GetApiKeysPostgresql(ctx context.Context, workspaceID int64) ([]ApiKey, error) {
+	rows, err := q.db.QueryContext(ctx, getApiKeysPostgresql, workspaceID)
 	if err != nil {
 		return nil, err
 	}

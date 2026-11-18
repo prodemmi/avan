@@ -26,7 +26,7 @@ func (a AnalysisService) GetProvidersStats(workspaceID, ownerID int64) (map[stri
 	return a.MessageService.GetProvidersStats(workspaceID, ownerID)
 }
 
-func (a AnalysisService) GetTimeDistribution(workspaceID, ownerID int64, startDate, endDate *time.Time) (map[string]sqlc.GetTimeDistributionPostgresqlRow, error) {
+func (a AnalysisService) GetTimeDistribution(workspaceID, ownerID int64, startDate, endDate *time.Time) (map[string][]sqlc.GetTimeDistributionPostgresqlRow, error) {
 	return a.MessageService.GetTimeDistribution(workspaceID, ownerID, startDate, endDate)
 }
 

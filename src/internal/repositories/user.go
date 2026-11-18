@@ -28,6 +28,10 @@ func (w UserRepository) FindUserByID(ctx context.Context, id int64) (sqlc.User, 
 	return user, err
 }
 
+func (w UserRepository) ListUsers(ctx context.Context, workspaceID int64) ([]sqlc.GetUsersPostgresqlRow, error) {
+	return w.Base.DB.Queries.GetUsersPostgresql(ctx, workspaceID)
+}
+
 func (w UserRepository) CreateAdminUser(ctx context.Context, email string, password string, workspaceID int64) error {
 	var err error
 

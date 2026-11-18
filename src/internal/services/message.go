@@ -8,9 +8,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/IBM/sarama"
 	"strings"
 	"time"
+
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type MessageService struct {
@@ -18,7 +19,7 @@ type MessageService struct {
 	MessageCache                 redis.Cache[sqlc.Message]
 	MessageSummaryCache          redis.Cache[sqlc.MessageSummaryPostgresqlRow]
 	MessageProvidersStatsCache   redis.Cache[map[string]sqlc.GetProviderStatsPostgresqlRow]
-	MessageTimeDistributionCache redis.Cache[map[string]sqlc.GetTimeDistributionPostgresqlRow]
+	MessageTimeDistributionCache redis.Cache[map[string][]sqlc.GetTimeDistributionPostgresqlRow]
 	MessageCountCache            redis.Cache[int64]
 	WorkspaceService             WorkspaceService
 	TemplateService              TemplateService
@@ -63,14 +64,14 @@ func (w MessageService) GetProvidersStats(workspaceID, ownerID int64) (map[strin
 	return w.MessageProvidersStatsCache.GetOrSet(key, time.Second*5, func() (map[string]sqlc.GetProviderStatsPostgresqlRow, error) {
 		providers, err := w.ProviderService.GetProviders(workspaceID, ownerID)
 		if err != nil {
-			return map[string]sqlc.GetProviderStatsPostgresqlRow{}, nil
+			return nil, err
 		}
 		data := make(map[string]sqlc.GetProviderStatsPostgresqlRow)
 
 		for _, provider := range providers {
 			result, err := w.Repo.GetProviderStats(ctx, workspaceID, provider.ID)
 			if err != nil {
-				return map[string]sqlc.GetProviderStatsPostgresqlRow{}, nil
+				return nil, err
 			}
 			data[provider.Name] = result
 		}
@@ -78,20 +79,20 @@ func (w MessageService) GetProvidersStats(workspaceID, ownerID int64) (map[strin
 	})
 }
 
-func (w MessageService) GetTimeDistribution(workspaceID, ownerID int64, startDate, endDate *time.Time) (map[string]sqlc.GetTimeDistributionPostgresqlRow, error) {
+func (w MessageService) GetTimeDistribution(workspaceID, ownerID int64, startDate, endDate *time.Time) (map[string][]sqlc.GetTimeDistributionPostgresqlRow, error) {
 	ctx := context.Background()
-	key := w.MessageTimeDistributionCache.GetKey("messages", "provider-distribution", workspaceID)
-	return w.MessageTimeDistributionCache.GetOrSet(key, time.Second*5, func() (map[string]sqlc.GetTimeDistributionPostgresqlRow, error) {
+	key := w.MessageTimeDistributionCache.GetKey("messages", "provider-distribution", workspaceID, startDate, endDate)
+	return w.MessageTimeDistributionCache.GetOrSet(key, time.Second*5, func() (map[string][]sqlc.GetTimeDistributionPostgresqlRow, error) {
 		providers, err := w.ProviderService.GetProviders(workspaceID, ownerID)
 		if err != nil {
-			return map[string]sqlc.GetTimeDistributionPostgresqlRow{}, nil
+			return nil, err
 		}
-		data := make(map[string]sqlc.GetTimeDistributionPostgresqlRow)
+		data := make(map[string][]sqlc.GetTimeDistributionPostgresqlRow)
 
 		for _, provider := range providers {
 			result, err := w.Repo.GetTimeDistribution(ctx, workspaceID, provider.ID, startDate, endDate)
 			if err != nil {
-				return map[string]sqlc.GetTimeDistributionPostgresqlRow{}, nil
+				return nil, err
 			}
 			data[provider.Name] = result
 		}
@@ -119,16 +120,6 @@ func (w MessageService) ProduceMessage(workspaceID, providerID int64, templateID
 		return err
 	}
 
-	appCfg := w.Repo.Base.Config
-	cfg := sarama.NewConfig()
-	cfg.Producer.Retry.Max = 5
-	cfg.Producer.Return.Successes = true
-
-	producer, err := sarama.NewSyncProducer(appCfg.KafkaBrokers, cfg)
-	if err != nil {
-		return err
-	}
-
 	now := time.Now()
 	message := sqlc.Message{
 		ID:          id,
@@ -140,31 +131,12 @@ func (w MessageService) ProduceMessage(workspaceID, providerID int64, templateID
 		Status:      int64(status),
 		ScheduleAt:  scheduleAt,
 		Payload:     payload,
-		SentAt:      sentAt,
+		SentAt:      &sentAt,
 		CreatedAt:   &now,
 		UpdatedAt:   &now,
 	}
 
-	jsonMessage, err := json.Marshal(message)
-	if err != nil {
-		return err
-	}
-
-	producerMessage := sarama.ProducerMessage{
-		Topic:     appCfg.KafkaTopic,
-		Key:       sarama.ByteEncoder(fmt.Sprint(providerID)),
-		Value:     sarama.ByteEncoder(jsonMessage),
-		Headers:   nil,
-		Metadata:  nil,
-		Timestamp: time.Now(),
-	}
-
-	_, _, err = producer.SendMessage(&producerMessage)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return w.enqueueMessage(message)
 }
 
 func (w MessageService) ProduceMessageDirectly(providerID, messageID int64) error {
@@ -173,36 +145,18 @@ func (w MessageService) ProduceMessageDirectly(providerID, messageID int64) erro
 		return err
 	}
 
-	appCfg := w.Repo.Base.Config
-	cfg := sarama.NewConfig()
-	cfg.Producer.Retry.Max = 5
-	cfg.Producer.Return.Successes = true
+	return w.enqueueMessage(message)
+}
 
-	producer, err := sarama.NewSyncProducer(appCfg.KafkaBrokers, cfg)
+func (w MessageService) enqueueMessage(message sqlc.Message) error {
+	payload, err := json.Marshal(message)
 	if err != nil {
 		return err
 	}
-
-	jsonMessage, err := json.Marshal(message)
-	if err != nil {
-		return err
-	}
-
-	producerMessage := sarama.ProducerMessage{
-		Topic: appCfg.KafkaTopic,
-		Key:   sarama.ByteEncoder(fmt.Sprint(providerID)),
-		Value: sarama.ByteEncoder(jsonMessage),
-		//Headers:   nil,
-		Metadata:  nil,
-		Timestamp: time.Now(),
-	}
-
-	_, _, err = producer.SendMessage(&producerMessage)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return w.Repo.Base.Redis.Client().XAdd(context.Background(), &goredis.XAddArgs{
+		Stream: redis.MessageQueueStream,
+		Values: map[string]interface{}{"payload": string(payload)},
+	}).Err()
 }
 
 type TemplateData struct {
@@ -281,7 +235,7 @@ func NewMessageService(repo repositories.MessageRepository, templateService Temp
 	messageCountCache := redis.NewCache[int64](repo.Base.Redis)
 	messageSummaryCache := redis.NewCache[sqlc.MessageSummaryPostgresqlRow](repo.Base.Redis)
 	messageProvidersStatsCache := redis.NewCache[map[string]sqlc.GetProviderStatsPostgresqlRow](repo.Base.Redis)
-	messageTimeDistributionCache := redis.NewCache[map[string]sqlc.GetTimeDistributionPostgresqlRow](repo.Base.Redis)
+	messageTimeDistributionCache := redis.NewCache[map[string][]sqlc.GetTimeDistributionPostgresqlRow](repo.Base.Redis)
 
 	return MessageService{
 		Repo:                         repo,

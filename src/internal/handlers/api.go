@@ -127,7 +127,7 @@ func (a ApiHandler) QuickSend(c *gin.Context) {
 		Content:     message,
 		Status:      1,
 		ScheduleAt:  nil,
-		SentAt:      now,
+		SentAt:      &now,
 		CreatedAt:   &now,
 		UpdatedAt:   &now,
 	}

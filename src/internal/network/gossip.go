@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/memberlist"
 	"go.uber.org/zap"
 	"io"
+	"os"
 	"time"
 )
 
@@ -53,7 +54,11 @@ func NewGossipService(logger zap.Logger, appConfig config.Config) GossipService 
 	}
 
 	// Join the cluster (you can specify other node addresses here)
-	_, err = memberlistInstance.Join(appConfig.Hosts) // Replace with actual node IPs/addresses
+	hosts := appConfig.Hosts
+	if host := os.Getenv("GOSSIP_HOST"); host != "" {
+		hosts = append(hosts, host)
+	}
+	_, err = memberlistInstance.Join(hosts)
 	if err != nil {
 		logger.Fatal("failed to join gossip memberlist", zap.Error(err))
 	}

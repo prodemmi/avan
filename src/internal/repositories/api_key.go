@@ -10,11 +10,8 @@ type ApiKeyRepository struct {
 	Base Repository
 }
 
-func (w ApiKeyRepository) FindAllApiKeys(ctx context.Context, workspaceID, ownerID int64) ([]sqlc.ApiKey, error) {
-	return w.Base.DB.Queries.GetApiKeysPostgresql(ctx, sqlc.GetApiKeysPostgresqlParams{
-		WorkspaceID: workspaceID,
-		OwnerID:     ownerID,
-	})
+func (w ApiKeyRepository) FindAllApiKeys(ctx context.Context, workspaceID int64) ([]sqlc.ApiKey, error) {
+	return w.Base.DB.Queries.GetApiKeysPostgresql(ctx, workspaceID)
 }
 
 func (w ApiKeyRepository) CreateApiKey(ctx context.Context, workspaceID, ownerID int64, name, apiKey string, expireAt *time.Time) (bool, error) {
@@ -34,8 +31,11 @@ func (w ApiKeyRepository) FindApiKeyByToken(ctx context.Context, apiKey string) 
 	return w.Base.DB.Queries.FindAPIKeyPostgresql(ctx, apiKey)
 }
 
-func (w ApiKeyRepository) DeleteApiKey(ctx context.Context, id int64) error {
-	return w.Base.DB.Queries.DeleteAPIKeyPostgresql(ctx, id)
+func (w ApiKeyRepository) DeleteApiKey(ctx context.Context, id, workspaceID int64) error {
+	return w.Base.DB.Queries.DeleteAPIKeyPostgresql(ctx, sqlc.DeleteAPIKeyPostgresqlParams{
+		ID:          id,
+		WorkspaceID: workspaceID,
+	})
 }
 
 func NewApiKeyRepository(base Repository) ApiKeyRepository {

@@ -41,6 +41,7 @@ func InitializeApp(appFlags config.AppFlags) App {
 		handlers.NewMessageHandler,
 		handlers.NewApiHandler,
 		handlers.NewApiKeyHandler,
+		handlers.NewUserHandler,
 		handlers.NewTemplateHandler,
 		handlers.NewProviderHandler,
 		handlers.NewWorkspaceHandler,

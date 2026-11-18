@@ -53,33 +53,33 @@ func main() {
 	app := wire.InitializeApp(flagCfg)
 
 	// Logging startup messages
-	if role == "both" || role == "server" {
+	if role == "both" || role == "server" || role == "web" {
 		app.Server.Logger.Info(fmt.Sprintf("running server on port: %d", app.Config.ServerPort))
 	}
 	if role == "both" || role == "consumer" {
-		app.Server.Logger.Info(fmt.Sprintf("running with %d consumer", app.Config.KafkaConsumerCount))
+		app.Server.Logger.Info(fmt.Sprintf("running with %d Redis consumers", app.Config.RedisConsumerCount))
 	}
 
 	// Setup default services
-	setupDefaultServices(&app)
+	if role != "consumer" {
+		setupDefaultServices(&app)
+	}
 
 	// Start gossip service in the background
 	//go app.GossipService.PrintMembers()
 
 	// Start the application based on mode
-	if role == "web" {
+	switch role {
+	case "server", "web":
 		runWebMode(&app)
-	}
-
-	if role == "both" {
+	case "both":
 		go runWebMode(&app)
-	}
-
-	if role == "consumer" || role == "both" {
 		app.Notifier.Start()
+	case "consumer":
+		app.Notifier.Start()
+	default:
+		app.Server.Logger.Fatal(fmt.Sprintf("please specify running mode with --running-mode=%s|%s", "server", "consumer"))
 	}
-
-	app.Server.Logger.Fatal(fmt.Sprintf("please specify running mode with --running-mode=%s|%s", "web", "consumer"))
 }
 
 // setupDefaultServices initializes default services
