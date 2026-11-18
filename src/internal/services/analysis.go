@@ -18,15 +18,15 @@ func (a AnalysisService) GetNodeAnalysis() (int, int, int) {
 	return a.GossipService.GetNodeHealth()
 }
 
-func (a AnalysisService) GetMessageSummary(workspaceID int64) (sqlc.MessageSummaryMysqlRow, error) {
+func (a AnalysisService) GetMessageSummary(workspaceID int64) (sqlc.MessageSummaryPostgresqlRow, error) {
 	return a.MessageService.GetMessageSummary(workspaceID)
 }
 
-func (a AnalysisService) GetProvidersStats(workspaceID, ownerID int64) (map[string]sqlc.GetProviderStatsMysqlRow, error) {
+func (a AnalysisService) GetProvidersStats(workspaceID, ownerID int64) (map[string]sqlc.GetProviderStatsPostgresqlRow, error) {
 	return a.MessageService.GetProvidersStats(workspaceID, ownerID)
 }
 
-func (a AnalysisService) GetTimeDistribution(workspaceID, ownerID int64, startDate, endDate *time.Time) (map[string]sqlc.GetTimeDistributionMysqlRow, error) {
+func (a AnalysisService) GetTimeDistribution(workspaceID, ownerID int64, startDate, endDate *time.Time) (map[string]sqlc.GetTimeDistributionPostgresqlRow, error) {
 	return a.MessageService.GetTimeDistribution(workspaceID, ownerID, startDate, endDate)
 }
 

@@ -21,14 +21,14 @@ admin.password: root
 workspace.default.name: default
 
 # Database configuration
-# Supported database types: postgres, mysql, sqlite
-database.type: ${DB_TYPE}
 # Name of the database
 database.name: ${DB_NAME}
 # Database host address
 database.host: ${DB_HOST}
 # Database port number
 database.port: ${DB_PORT}
+# PostgreSQL SSL mode
+database.ssl_mode: ${DB_SSL_MODE}
 # Database username
 database.user: ${DB_USER}
 # Database password (consider using secure storage)

@@ -13,10 +13,9 @@ type AnalysisData struct {
 	SuccessRate      interface{}
 	ErrorRate        interface{}
 	AvgSendTime      interface{}
-	DatabaseType     string
 	ConsumerCount    int
-	ProvidersStats   map[string]sqlc.GetProviderStatsMysqlRow
-	TimeDistribution map[string]sqlc.GetTimeDistributionMysqlRow
+	ProvidersStats   map[string]sqlc.GetProviderStatsPostgresqlRow
+	TimeDistribution map[string]sqlc.GetTimeDistributionPostgresqlRow
 
 	NodesCount     int
 	HealthyNodes   int
@@ -80,7 +79,7 @@ templ Index(data AnalysisData) {
 					</div>
 					<div class="p-4 bg-blue-100 rounded text-center w-full dark:bg-blue-400">
 						<p class="font-semibold text-black dark:text-white">Avg Send Time</p>
-						<p class="font-bold">{ fmt.Sprintf("%s", data.AvgSendTime) }s</p>
+						<p class="font-bold">{ fmt.Sprintf("%v", data.AvgSendTime) }s</p>
 					</div>
 					<div class="p-4 bg-green-100 rounded text-center w-full dark:bg-green-400">
 						<p class="font-semibold text-black dark:text-white">Success Rate</p>
@@ -118,7 +117,7 @@ templ Index(data AnalysisData) {
 								<td class="p-2 text-center bg-red-100 dark:bg-red-600">{ fmt.Sprint(value.Failed) }</td>
 								<td class="p-2 text-center bg-green-100 dark:bg-green-600">{ fmt.Sprintf("%.2f%%", value.SuccessRate) }</td>
 								<td class="p-2 text-center bg-red-100 dark:bg-red-600">{ fmt.Sprintf("%.2f%%", value.ErrorRate) }</td>
-								<td class="p-2 text-end">{ fmt.Sprintf("%s", value.AvgSendTime) }s</td>
+								<td class="p-2 text-end">{ fmt.Sprintf("%v", value.AvgSendTime) }s</td>
 							</tr>
 							}
 							</tbody>
@@ -178,7 +177,7 @@ templ Index(data AnalysisData) {
 				<div class="grid grid-cols-2 gap-4">
 					@SystemStatusCard("Kafka", "Connected", "green")
 					@SystemStatusCard("Consumers", fmt.Sprintf("Running (%d active)", data.ConsumerCount), "green")
-					@SystemStatusCard(fmt.Sprintf("Database (%s)", data.DatabaseType), "Connected", "green")
+					@SystemStatusCard("Database (PostgreSQL)", "Connected", "green")
 					@SystemStatusCard("Redis", "Connected", "green")
 				</div>
 			</div>

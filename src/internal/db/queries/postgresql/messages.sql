@@ -9,7 +9,7 @@ WHERE workspace_id = sqlc.arg('workspace_id')
   AND (sqlc.narg('provider_id') IS NULL OR provider_id = sqlc.narg('provider_id'))
 ORDER BY created_at DESC;
 
--- name: CreateMessagePostgresql :execlastid
+-- name: CreateMessagePostgresql :one
 INSERT INTO messages (workspace_id,
                       provider_id,
                       template_id,
@@ -20,7 +20,8 @@ INSERT INTO messages (workspace_id,
                       schedule_at,
                       sent_at,
                       payload)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id::BIGINT;
 
 -- name: MessageCountPostgresql :one
 SELECT COUNT(*)

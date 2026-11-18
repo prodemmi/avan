@@ -36,7 +36,6 @@ func (w AnalysisHandler) Index(c *gin.Context) {
 	}
 
 	nodes, healthy, unhealthy := w.AnalysisService.GetNodeAnalysis()
-	databaseType := w.AnalysisService.AnalysisRepository.Base.GetDBDialector()
 	consumerCount := w.AnalysisService.AnalysisRepository.Base.Config.KafkaConsumerCount
 
 	ownerID := GetUserIDFromContext(c)
@@ -54,8 +53,6 @@ func (w AnalysisHandler) Index(c *gin.Context) {
 		SuccessRate:     messageSummary.SuccessRate,
 		ErrorRate:       messageSummary.ErrorRate,
 		AvgSendTime:     messageSummary.AvgSendTime,
-
-		DatabaseType: databaseType,
 
 		ConsumerCount:    consumerCount,
 		ProvidersStats:   providersStats,

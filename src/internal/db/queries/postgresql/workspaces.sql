@@ -17,7 +17,7 @@ UPDATE workspaces SET is_default = (id = $1) WHERE owner_id = $2;
 SELECT * FROM workspaces WHERE is_default = true AND owner_id = $1 LIMIT 1;
 
 -- name: DeleteWorkspacePostgresql :exec
-DELETE FROM workspaces WHERE id = $1 AND is_default = 0;
+DELETE FROM workspaces WHERE id = $1 AND is_default = false;
 
 -- name: FindWorkspaceByNamePostgresql :one
 SELECT * FROM workspaces WHERE name = $1 LIMIT 1;

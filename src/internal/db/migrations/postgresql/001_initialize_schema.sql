@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE users
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT       NOT NULL,
     name         VARCHAR(50)  NOT NULL,
     email        VARCHAR(50)  NOT NULL UNIQUE,
@@ -13,7 +13,7 @@ CREATE TABLE users
 
 CREATE TABLE workspaces
 (
-    id         SERIAL PRIMARY KEY,
+    id         BIGSERIAL PRIMARY KEY,
     owner_id   BIGINT       NOT NULL,
     name       VARCHAR(255) NOT NULL UNIQUE,
     is_default BOOLEAN      NOT NULL DEFAULT FALSE,
@@ -24,7 +24,7 @@ CREATE TABLE workspaces
 
 CREATE TABLE roles
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT      NOT NULL,
     name         VARCHAR(50) NOT NULL UNIQUE,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -34,7 +34,7 @@ CREATE TABLE roles
 
 CREATE TABLE permissions
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT       NOT NULL,
     name         VARCHAR(100) NOT NULL UNIQUE,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -44,7 +44,7 @@ CREATE TABLE permissions
 
 CREATE TABLE role_permissions
 (
-    id            SERIAL PRIMARY KEY,
+    id            BIGSERIAL PRIMARY KEY,
     workspace_id  BIGINT NOT NULL,
     role_id       BIGINT NOT NULL,
     permission_id BIGINT NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE role_permissions
 
 CREATE TABLE templates
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     owner_id     BIGINT      NOT NULL,
     workspace_id BIGINT      NOT NULL,
     name         VARCHAR(64) NOT NULL,
@@ -67,9 +67,22 @@ CREATE TABLE templates
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+CREATE TABLE providers
+(
+    id           BIGSERIAL PRIMARY KEY,
+    workspace_id BIGINT      NOT NULL,
+    owner_id     BIGINT      NOT NULL,
+    config_type  INT         NOT NULL,
+    name         VARCHAR(32) NOT NULL,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE,
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
 CREATE TABLE messages
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT       NOT NULL,
     provider_id  BIGINT       NOT NULL,
     template_id  BIGINT       DEFAULT NULL,
@@ -86,22 +99,9 @@ CREATE TABLE messages
     FOREIGN KEY (provider_id) REFERENCES providers (id) ON DELETE CASCADE
 );
 
-CREATE TABLE providers
-(
-    id           SERIAL PRIMARY KEY,
-    workspace_id BIGINT      NOT NULL,
-    owner_id     BIGINT      NOT NULL,
-    config_type  INT         NOT NULL,
-    name         VARCHAR(32) NOT NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE,
-    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
 CREATE TABLE email_configs
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT       NOT NULL,
     owner_id     BIGINT       NOT NULL,
     provider_id  BIGINT       NOT NULL,
@@ -118,7 +118,7 @@ CREATE TABLE email_configs
 
 CREATE TABLE sms_configs
 (
-    id                SERIAL PRIMARY KEY,
+    id                BIGSERIAL PRIMARY KEY,
     workspace_id      BIGINT       NOT NULL,
     owner_id          BIGINT       NOT NULL,
     provider_id       BIGINT       NOT NULL,
@@ -136,7 +136,7 @@ CREATE TABLE sms_configs
 
 CREATE TABLE telegram_configs
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT       NOT NULL,
     owner_id     BIGINT       NOT NULL,
     provider_id  BIGINT       NOT NULL,
@@ -150,7 +150,7 @@ CREATE TABLE telegram_configs
 
 CREATE TABLE slack_configs
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT       NOT NULL,
     owner_id     BIGINT       NOT NULL,
     provider_id  BIGINT       NOT NULL,
@@ -164,7 +164,7 @@ CREATE TABLE slack_configs
 
 CREATE TABLE webhook_configs
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT       NOT NULL,
     owner_id     BIGINT       NOT NULL,
     provider_id  BIGINT       NOT NULL,
@@ -178,7 +178,7 @@ CREATE TABLE webhook_configs
 
 CREATE TABLE api_keys
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT       NOT NULL,
     owner_id     BIGINT       NOT NULL,
     name         VARCHAR(50)  NOT NULL,
@@ -192,7 +192,7 @@ CREATE TABLE api_keys
 
 CREATE TABLE settings
 (
-    id           SERIAL PRIMARY KEY,
+    id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT      NOT NULL,
     key          VARCHAR(32) NOT NULL,
     value        TEXT      DEFAULT NULL,

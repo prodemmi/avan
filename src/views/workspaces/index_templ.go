@@ -64,19 +64,19 @@ func Index(workspaceList []sqlc.Workspace, page components.PageData) templ.Compo
 		} else {
 			workspaces := table.ToTableMapList(workspaceList)
 			selectAction := func(row map[string]any) (string, string, string) {
-				if row["IsDefault"].(int64) == 0 {
+				if !row["IsDefault"].(bool) {
 					return "Set Default", fmt.Sprintf("/dashboard/workspaces/%d/setDefault", row["ID"]), "POST"
 				}
 				return "", "", ""
 			}
 			editAction := func(row map[string]any) (string, string, string) {
-				if row["ID"].(int64) != 1 && row["IsDefault"].(int64) != 1 {
+				if row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
 					return "Edit", fmt.Sprintf("/dashboard/workspaces/%d/edit", row["ID"]), "GET"
 				}
 				return "", "", ""
 			}
 			deleteAction := func(row map[string]any) (string, string, string) {
-				if row["ID"].(int64) != 1 && row["IsDefault"].(int64) != 1 {
+				if row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
 					return "Delete", fmt.Sprintf("/dashboard/workspaces/%d/delete", row["ID"]), "POST"
 				}
 				return "", "", ""
@@ -84,7 +84,7 @@ func Index(workspaceList []sqlc.Workspace, page components.PageData) templ.Compo
 			actions := []components.TableAction{selectAction, editAction, deleteAction}
 			resolver := func(row map[string]any, header string) any {
 				if header == "IsDefault" {
-					if row["IsDefault"].(int64) == 1 {
+					if row["IsDefault"].(bool) {
 						return `<i class="ri-checkbox-circle-fill text-green-500"></i>`
 					} else {
 						return `<i class="ri-close-circle-fill text-red-500"></i>`
