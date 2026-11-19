@@ -18,10 +18,11 @@ INSERT INTO messages (workspace_id,
                       content,
                       status,
                       error,
+                      retry,
                       schedule_at,
                       sent_at,
                       payload)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING id::BIGINT
 `
 
@@ -33,6 +34,7 @@ type CreateMessagePostgresqlParams struct {
 	Content     string     `db:"content" json:"content"`
 	Status      int64      `db:"status" json:"status"`
 	Error       *string    `db:"error" json:"error"`
+	Retry       bool       `db:"retry" json:"retry"`
 	ScheduleAt  *time.Time `db:"schedule_at" json:"schedule_at"`
 	SentAt      *time.Time `db:"sent_at" json:"sent_at"`
 	Payload     *string    `db:"payload" json:"payload"`
@@ -47,6 +49,7 @@ func (q *Queries) CreateMessagePostgresql(ctx context.Context, arg CreateMessage
 		arg.Content,
 		arg.Status,
 		arg.Error,
+		arg.Retry,
 		arg.ScheduleAt,
 		arg.SentAt,
 		arg.Payload,
@@ -57,7 +60,7 @@ func (q *Queries) CreateMessagePostgresql(ctx context.Context, arg CreateMessage
 }
 
 const getMessagePostgresql = `-- name: GetMessagePostgresql :one
-SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at FROM messages WHERE id = $1 LIMIT 1
+SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at, retry FROM messages WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetMessagePostgresql(ctx context.Context, id int64) (Message, error) {
@@ -77,12 +80,13 @@ func (q *Queries) GetMessagePostgresql(ctx context.Context, id int64) (Message, 
 		&i.SentAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Retry,
 	)
 	return i, err
 }
 
 const listMessagesPostgresql = `-- name: ListMessagesPostgresql :many
-SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at
+SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at, retry
 FROM messages
 WHERE workspace_id = $1
   AND ($2 IS NULL OR template_id = $2)
@@ -132,6 +136,7 @@ func (q *Queries) ListMessagesPostgresql(ctx context.Context, arg ListMessagesPo
 			&i.SentAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Retry,
 		); err != nil {
 			return nil, err
 		}

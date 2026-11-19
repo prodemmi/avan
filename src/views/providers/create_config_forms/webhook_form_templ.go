@@ -28,23 +28,15 @@ func WebhookForm() templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-4\"><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"url\">URL</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"provider-fields\"><div class=\"provider-field provider-field-wide\"><label for=\"webhook_url\">Webhook URL</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.UrlInput("webhook_url", "Enter provider url", "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.UrlInput("webhook_url", "https://example.com/webhook", "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"url-data\"></div></div><div class=\"mt-4\" style=\"width: 20dvw\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = components.SubmitButton("Create Webhook Config").Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></div><script>\n    function validateUrl(url) {\n        return /^[a-z]+:\\/\\//i.test(url);\n    }\n\n    const urlInput = document.getElementById(\"url\")\n    if (urlInput) {\n        urlInput.oninput = (e) => {\n            const urlData = document.getElementById(\"url-data\");\n            if (urlInput) {\n                let content = \"\"\n                const value = e.target.value\n                if (validateUrl(value)) {\n                    const searchParams = new URLSearchParams(e.target.value);\n                    searchParams.forEach((value, key) => {\n                        if (!key.startsWith(\"http\"))\n                            content += `<div><b>${key}</b>: ${value}</div>`\n                    })\n                    urlData.innerHTML= content\n                } else {\n                    content = `<div class=\"text-red-500\">Not valid url</div>`\n                    urlData.innerHTML= content\n                }\n            }\n        }\n    }\n</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p>Avan sends this endpoint a JSON request when a message is queued.</p></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -13,11 +13,40 @@ import (
 )
 
 type ApiKeyHandler struct {
-	ApiKeyService services.ApiKeyService
+	ApiKeyService    services.ApiKeyService
+	WorkspaceService services.WorkspaceService
+}
+
+func (w ApiKeyHandler) workspaceID(c *gin.Context) (int64, error) {
+	requested := c.Query("workspace-id")
+	if requested == "" && c.Request.Method != http.MethodGet {
+		requested = c.PostForm("workspace-id")
+	}
+	if requested == "" {
+		return GetWorkspaceIDFromContext(c), nil
+	}
+	id, err := ConvertToInt64(requested)
+	if err != nil || id <= 0 {
+		return 0, fmt.Errorf("invalid workspace")
+	}
+	workspaces, err := w.WorkspaceService.GetWorkspaces(c.Request.Context(), GetUserIDFromContext(c))
+	if err != nil {
+		return 0, err
+	}
+	for _, workspace := range workspaces {
+		if workspace.ID == id {
+			return id, nil
+		}
+	}
+	return 0, fmt.Errorf("workspace not found")
 }
 
 func (w ApiKeyHandler) Index(c *gin.Context) {
-	workspaceID := GetWorkspaceIDFromContext(c)
+	workspaceID, err := w.workspaceID(c)
+	if err != nil {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
 	_apiKeys, err := w.ApiKeyService.GetApiKeys(workspaceID)
 	if err != nil {
 		c = ContextWithError(c, err.Error())
@@ -27,7 +56,7 @@ func (w ApiKeyHandler) Index(c *gin.Context) {
 
 	page := components.PageData{}
 
-	defaultContent := api_keys.Index(_apiKeys, page)
+	defaultContent := api_keys.Index(_apiKeys, page, workspaceID)
 	var items []layout.MenuItem
 	base := layout.Layout(defaultContent, "", items)
 	err = base.Render(c.Request.Context(), c.Writer)
@@ -37,16 +66,19 @@ func (w ApiKeyHandler) Index(c *gin.Context) {
 }
 
 func (w ApiKeyHandler) Create(c *gin.Context) {
-	defaultContent := api_keys.Create()
+	workspaceID, err := w.workspaceID(c)
+	if err != nil {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	defaultContent := api_keys.Create(workspaceID)
 
 	base := layout.Layout(defaultContent, "", nil)
-	err := base.Render(c.Request.Context(), c.Writer)
+	err = base.Render(c.Request.Context(), c.Writer)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 	}
 }
-
-var redirectApiKeyURL = "http://%s/dashboard/api-keys/"
 
 func (w ApiKeyHandler) Store(c *gin.Context) {
 	var body struct {
@@ -89,7 +121,11 @@ func (w ApiKeyHandler) Store(c *gin.Context) {
 		return
 	}
 
-	workspaceID := GetWorkspaceIDFromContext(c)
+	workspaceID, err := w.workspaceID(c)
+	if err != nil {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
 	ownerID := GetUserIDFromContext(c)
 
 	_, err = w.ApiKeyService.CreateApiKey(workspaceID, ownerID, body.Name, apiKey, expireAt)
@@ -99,7 +135,7 @@ func (w ApiKeyHandler) Store(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf(redirectApiKeyURL, c.Request.Host))
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/dashboard/api-keys?workspace-id=%d", workspaceID))
 }
 
 func (w ApiKeyHandler) Delete(c *gin.Context) {
@@ -114,15 +150,20 @@ func (w ApiKeyHandler) Delete(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	err = w.ApiKeyService.DeleteApiKey(apiKeyID, GetWorkspaceIDFromContext(c))
+	workspaceID, err := w.workspaceID(c)
+	if err != nil {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	err = w.ApiKeyService.DeleteApiKey(apiKeyID, workspaceID)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/dashboard/api-keys")
+	c.Redirect(http.StatusFound, fmt.Sprintf("/dashboard/api-keys?workspace-id=%d", workspaceID))
 }
 
-func NewApiKeyHandler(apiKeyService services.ApiKeyService) ApiKeyHandler {
-	return ApiKeyHandler{ApiKeyService: apiKeyService}
+func NewApiKeyHandler(apiKeyService services.ApiKeyService, workspaceService services.WorkspaceService) ApiKeyHandler {
+	return ApiKeyHandler{ApiKeyService: apiKeyService, WorkspaceService: workspaceService}
 }

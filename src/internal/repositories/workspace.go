@@ -13,6 +13,10 @@ func (w WorkspaceRepository) ListWorkspaces(ctx context.Context, ownerID int64) 
 	return w.Base.DB.Queries.ListWorkspacesPostgresql(ctx, ownerID)
 }
 
+func (w WorkspaceRepository) ListAllWorkspaces(ctx context.Context) ([]sqlc.Workspace, error) {
+	return w.Base.DB.Queries.ListAllWorkspacesPostgresql(ctx)
+}
+
 func (w WorkspaceRepository) SetDefaultWorkspace(ctx context.Context, id int64, ownerID int64) error {
 	return w.Base.DB.Queries.SetDefaultWorkspacePostgresql(ctx, sqlc.SetDefaultWorkspacePostgresqlParams{
 		ID:      id,

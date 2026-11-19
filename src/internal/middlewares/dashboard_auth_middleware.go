@@ -4,6 +4,7 @@ import (
 	"avan/internal/services"
 	"context"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -28,38 +29,71 @@ func AuthMiddleware(authService services.AuthService, workspaceService services.
 			return
 		}
 
-		// Store claims in the context
-		userID := claims["user_id"].(float64)
+		userID, ok := claims["user_id"].(float64)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			return
+		}
 		c.Set("user_id", userID)
 
-		sendErr := func(err error) {
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, nil)
-				c.Abort()
-				return
+		ctx := c.Request.Context()
+		workspaces, err := workspaceService.GetWorkspaces(ctx, int64(userID))
+		if err != nil || len(workspaces) == 0 {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		workspace, err := workspaceService.GetDefaultWorkspace(int64(userID))
+		if err != nil {
+			workspace = workspaces[0]
+		}
+		if cookie, cookieErr := c.Cookie("workspace_id"); cookieErr == nil {
+			if selectedID, parseErr := strconv.ParseInt(cookie, 10, 64); parseErr == nil {
+				for _, accessible := range workspaces {
+					if accessible.ID == selectedID {
+						workspace = accessible
+						break
+					}
+				}
 			}
 		}
-
-		ctx := c.Request.Context()
-		workspace, err := workspaceService.GetDefaultWorkspace(int64(userID))
-		sendErr(err)
 		ctx = context.WithValue(c.Request.Context(), "workspace", workspace)
+		ctx = context.WithValue(ctx, "workspaces", workspaces)
 		c.Set("workspace", workspace)
+		c.Set("workspaces", workspaces)
 
-		primaryColor, err := workspaceService.GetPrimaryColor(int64(userID))
-		sendErr(err)
+		setting := func(key, fallback string) (string, error) {
+			value, err := workspaceService.SettingService.GetSetting(workspace.ID, key)
+			if err != nil {
+				return "", err
+			}
+			if value.Value == nil || *value.Value == "" {
+				return fallback, nil
+			}
+			return *value.Value, nil
+		}
+		primaryColor, err := setting("primary-color", "#780C28")
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
 
 		ctx = context.WithValue(ctx, "primaryColor", primaryColor)
 		c.Set("primaryColor", primaryColor)
 
-		theme, err := workspaceService.GetTheme(int64(userID))
-		sendErr(err)
+		theme, err := setting("theme", "auto")
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
 
 		ctx = context.WithValue(ctx, "theme", theme)
 		c.Set("theme", theme)
 
-		timezone, err := workspaceService.GetTimezone(int64(userID))
-		sendErr(err)
+		timezone, err := setting("timezone", "UTC")
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
 
 		ctx = context.WithValue(ctx, "timezone", timezone)
 		c.Set("timezone", timezone)

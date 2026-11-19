@@ -86,22 +86,9 @@ templ Index(settings []sqlc.Setting) {
 				<form action="/dashboard/settings" method="POST" class="relative">
 					<input type="hidden" name="key" value="primary-color">
 					<input type="hidden" name="value" value={ color }>
-					if color == primaryColor {
-					<div
-							class="w-8 h-8 rounded-full border-solid border-2 shadow-md border-blue-500 cursor-pointer dark:border-gray-800"
-							style={ fmt.Sprintf("background-color: %s", color) }
-					onclick="this.closest('form').submit()">
-			</div>
-			} else {
-			<div
-					class="w-8 h-8 rounded-full cursor-pointer"
-					style={ fmt.Sprintf("background-color: %s", color) }
-			onclick="this.closest('form').submit()">
-		</div>
-		}
-		<input type="submit" class="absolute" style="inset: 0;width: 100%;height: 100%;visibility: hidden;" />
-		</form>
-		}
+				<button type="submit" class={ "color-swatch", templ.KV("is-selected", color == primaryColor) } style={ fmt.Sprintf("background-color: %s", color) } aria-label={ fmt.Sprintf("Select primary color %s", color) } title={ color }></button>
+				</form>
+				}
 	</div>
 
 		</div>

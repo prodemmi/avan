@@ -7,88 +7,44 @@ import (
 )
 
 templ SmsForm(config sqlc.SmsConfig) {
-	<div class="flex flex-col gap-4">
-		<div>
-			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="url">
-				URL
-			</label>
-			@components.UrlInput("sms_url", "Enter provider url", config.Url)
-			<div id="url-data"></div>
+	<div class="provider-fields">
+		<div class="provider-field provider-field-wide">
+			<label for="sms_url">Provider URL</label>
+			@components.UrlInput("sms_url", "https://api.example.com/send", config.Url)
+			<p>Use <code>$send_to</code> and <code>$message</code> in a GET URL when your gateway expects query parameters.</p>
 		</div>
-		<div>
-			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="method">
-				Method
-			</label>
-			{{
-	options := []components.SelectOption{
-		{Value: "0", Label: "GET"},
-		{Value: "1", Label: "POST"},
-	}
-			}}
+		<div class="provider-field">
+			<label for="sms_method">HTTP method</label>
+			{{ options := []components.SelectOption{{Value: "0", Label: "GET"}, {Value: "1", Label: "POST"}} }}
 			@components.Select("sms_method", options, strconv.Itoa(int(config.Method)))
 		</div>
-		<div>
-			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_is_auth_in_header">
-				Authenticate in Header
-			</label>
-			{{
-	isAuthInHeader := false
-	if config.IsAuthInHeader != nil {
-		isAuthInHeader = *config.IsAuthInHeader
-	}
-			}}
+		<div id="sms-post-body" class={ "provider-field", "provider-field-wide", "sms-post-body", templ.KV("hidden", config.Method != 1) }>
+			<label for="sms_body_schema">POST body template (JSON)</label>
+			{{ bodySchema := `{"to":"$send_to","message":"$message"}`; if config.BodySchema != nil && *config.BodySchema != "" { bodySchema = *config.BodySchema } }}
+			<textarea class="provider-json-editor" id="sms_body_schema" name="sms_body_schema" rows="8" spellcheck="false">{ bodySchema }</textarea>
+			<p>Available variables: <code>$send_to</code>, <code>$message</code>, <code>$payload</code>, <code>$retry</code>, <code>$schedule_at</code>, <code>$provider_id</code>, <code>$template_id</code>, <code>$workspace_id</code>. <code>$payload</code> inserts a JSON object and <code>$retry</code> a boolean.</p>
+		</div>
+		<div class="provider-field provider-field-inline">
+			<label for="sms_is_auth_in_header">Send auth in header</label>
+			{{ isAuthInHeader := config.IsAuthInHeader != nil && *config.IsAuthInHeader }}
 			@components.Checkbox("sms_is_auth_in_header", isAuthInHeader)
 		</div>
-		<div>
-			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_auth_token_key">
-				Auth Token Key
-			</label>
-			{{
-	authTokenKey := ""
-	if config.AuthTokenKey != nil {
-		authTokenKey = *config.AuthTokenKey
-	}
-			}}
-			@components.OptionalInput("sms_auth_token_key", "Enter token key", authTokenKey)
+		<div class="provider-field">
+			<label for="sms_auth_token_key">Auth token key</label>
+			{{ authTokenKey := ""; if config.AuthTokenKey != nil { authTokenKey = *config.AuthTokenKey } }}
+			@components.OptionalInput("sms_auth_token_key", "e.g. Authorization", authTokenKey)
 		</div>
-		<div>
-			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="sms_auth_token_value">
-				Auth Token Value
-			</label>
-			{{
-	authTokenValue := ""
-	if config.AuthTokenValue != nil {
-		authTokenValue = *config.AuthTokenValue
-	}
-			}}
-			@components.OptionalPasswordInput("sms_auth_token_value", "Enter token value", authTokenValue)
+		<div class="provider-field">
+			<label for="sms_auth_token_value">Auth token value</label>
+			@components.OptionalPasswordInput("sms_auth_token_value", "Leave blank to keep current", "")
+			<p>For security, the saved token is not shown.</p>
 		</div>
 	</div>
 	<script>
-        function validateUrl(url) {
-            return /^[a-z]+:\/\//i.test(url);
-        }
-
-        const urlInput = document.getElementById("url")
-        if (urlInput) {
-            urlInput.oninput = (e) => {
-                const urlData = document.getElementById("url-data");
-                if (urlInput) {
-                    let content = ""
-                    const value = e.target.value
-                    if (validateUrl(value)) {
-                        const searchParams = new URLSearchParams(e.target.value);
-                        searchParams.forEach((value, key) => {
-                            if (!key.startsWith("http"))
-                                content += `<div><b>${key}</b>: ${value}</div>`
-                        })
-                        urlData.innerHTML= content
-                    } else {
-                        content = `<div class="text-red-500">Not valid url</div>`
-                        urlData.innerHTML= content
-                    }
-                }
-            }
-        }
-    </script>
+		const methodSelect = document.getElementById("sms_method");
+		const bodySchema = document.getElementById("sms-post-body");
+		const updateBodyVisibility = () => bodySchema?.classList.toggle("hidden", methodSelect?.value !== "1");
+		methodSelect?.addEventListener("change", updateBodyVisibility);
+		updateBodyVisibility();
+	</script>
 }

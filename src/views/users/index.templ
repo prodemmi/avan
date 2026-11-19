@@ -3,56 +3,173 @@ package users
 import (
 	"avan/internal/db/sqlc"
 	"fmt"
+	"strings"
 )
 
-templ Index(userList []sqlc.GetUsersPostgresqlRow) {
+var permissions = []string{
+	"analysis.read", "api_keys.manage", "developer.read", "messages.read",
+	"providers.manage", "settings.manage", "templates.manage", "users.manage", "workspaces.manage",
+}
+
+type RoleOption struct {
+	ID   int64
+	Name string
+}
+
+type WorkspaceAccess struct {
+	Workspace      sqlc.Workspace
+	Roles          []RoleOption
+	SelectedRoleID int64
+}
+
+type Member struct {
+	User       sqlc.GetUsersPostgresqlRow
+	IsSuper    bool
+	Workspaces []WorkspaceAccess
+}
+
+func roleHasPermission(role sqlc.GetWorkspaceRolesPostgresqlRow, permission string) bool {
+	var value string
+	switch permissions := role.Permissions.(type) {
+	case string:
+		value = permissions
+	case []byte:
+		value = string(permissions)
+	default:
+		value = fmt.Sprint(permissions)
+	}
+	return strings.Contains(","+value+",", ","+permission+",")
+}
+
+templ Index(members []Member, roleList []sqlc.GetWorkspaceRolesPostgresqlRow) {
 	<div class="flex items-center justify-between mb-6">
 		<div>
-			<h1 class="text-2xl font-bold">Users</h1>
-			<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">People in this workspace</p>
+			<h1 class="text-2xl font-bold">Users &amp; roles</h1>
+			<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage workspace administrators, roles, and access permissions.</p>
 		</div>
-		<span class="rounded-full bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-700">{ fmt.Sprint(len(userList)) }</span>
+		<span class="rounded-full bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-700">{ fmt.Sprint(len(members)) }</span>
 	</div>
-	if len(userList) == 0 {
-		<div class="rounded-xl border border-gray-200 bg-white p-10 text-center dark:border-gray-700 dark:bg-gray-800">
-			<i class="ri-user-search-line text-4xl text-gray-400" aria-hidden="true"></i>
-			<h2 class="mt-3 text-lg font-semibold">No users found</h2>
-			<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Users assigned to this workspace will appear here.</p>
+	<section class="user-admin-panel">
+		<h2 class="text-lg font-semibold">Workspace members</h2>
+		if len(members) == 0 {
+			<p class="mt-3 text-sm text-gray-500">No users found.</p>
+		} else {
+			<div class="overflow-x-auto">
+				<table class="w-full text-left text-sm rtl:text-right">
+					<thead><tr><th>Name</th><th>Email</th><th>Mobile</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+					<tbody>
+						for _, member := range members {
+							<tr>
+								<td>{ member.User.Name }</td>
+								<td>{ member.User.Email }</td>
+								<td>
+									if member.User.Mobile != nil {
+										{ *member.User.Mobile }
+									} else {
+										<span>—</span>
+									}
+								</td>
+								<td>
+									if member.IsSuper {
+										<span class="super-admin-badge">Super admin</span>
+									} else {
+										<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/role", member.User.ID)) } method="POST" class="role-assignment-form">
+											<select name="role_id" aria-label={ fmt.Sprintf("Role for %s", member.User.Email) } onchange="this.form.requestSubmit()">
+												<option value="0" selected?={ !member.User.RoleID.Valid }>Unassigned</option>
+												for _, role := range roleList {
+													<option value={ fmt.Sprint(role.ID) } selected?={ member.User.RoleID.Valid && member.User.RoleID.Int64 == role.ID }>{ role.Name }</option>
+												}
+											</select>
+											<noscript><button type="submit">Save</button></noscript>
+										</form>
+									}
+								</td>
+								<td>
+									if member.User.CreatedAt != nil {
+										{ member.User.CreatedAt.Format("Jan 2, 2006") }
+									} else {
+										<span>—</span>
+									}
+								</td>
+								<td>
+									if member.IsSuper {
+										<span class="text-sm text-gray-500">Configured account is protected.</span>
+									} else {
+										<details class="member-actions">
+											<summary>Manage</summary>
+											<div class="member-actions-content">
+												<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/edit", member.User.ID)) } method="POST" class="user-edit-form">
+													<label>Name<input name="name" maxlength="50" required value={ member.User.Name } /></label>
+													<label>Email<input name="email" type="email" maxlength="50" required value={ member.User.Email } /></label>
+													<label>New password<input name="password" type="password" minlength="8" autocomplete="new-password" placeholder="Leave blank to keep unchanged" /></label>
+													<button type="submit">Save changes</button>
+												</form>
+												<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/delete", member.User.ID)) } method="POST" class="user-delete-form">
+													<button class="button-danger" type="submit">Delete user</button>
+												</form>
+												<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/workspaces", member.User.ID)) } method="POST" class="user-workspaces-form">
+													<strong>Workspace access</strong>
+													for _, access := range member.Workspaces {
+														<div class="workspace-role-assignment">
+															<label class="workspace-access-check"><input type="checkbox" name="workspace_ids" value={ fmt.Sprint(access.Workspace.ID) } checked?={ access.SelectedRoleID > 0 } />{ access.Workspace.Name }</label>
+															<select name={ fmt.Sprintf("role_%d", access.Workspace.ID) } aria-label={ fmt.Sprintf("Role in %s", access.Workspace.Name) }>
+																for _, role := range access.Roles {
+																	<option value={ fmt.Sprint(role.ID) } selected?={ access.SelectedRoleID == role.ID }>{ role.Name }</option>
+																}
+															</select>
+														</div>
+													}
+													<button type="submit">Save workspace access</button>
+												</form>
+											</div>
+										</details>
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</section>
+	<section class="user-admin-panel">
+		<h2 class="text-lg font-semibold">Add administrator or member</h2>
+		<form action="/dashboard/users/" method="POST" class="user-create-form">
+			<label>Name<input name="name" maxlength="50" required autocomplete="name" /></label>
+			<label>Email<input name="email" type="email" maxlength="50" required autocomplete="email" /></label>
+			<label>Password<input name="password" type="password" minlength="8" required autocomplete="new-password" /></label>
+			<label>Role<select name="role_id" required>
+				<option value="">Select a role</option>
+				for _, role := range roleList {
+					<option value={ fmt.Sprint(role.ID) }>{ role.Name }</option>
+				}
+			</select></label>
+			<button type="submit">Create user</button>
+		</form>
+	</section>
+	<section class="user-admin-panel">
+		<div class="flex items-center justify-between gap-4">
+			<div><h2 class="text-lg font-semibold">Roles &amp; permissions</h2><p class="mt-1 text-sm text-gray-500">Permissions control access to dashboard sections and management actions.</p></div>
 		</div>
-	} else {
-		<div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-			<table class="w-full text-left text-sm rtl:text-right">
-				<thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-700 dark:text-gray-300">
-					<tr>
-						<th scope="col" class="px-5 py-4">Name</th>
-						<th scope="col" class="px-5 py-4">Email</th>
-						<th scope="col" class="px-5 py-4">Mobile</th>
-						<th scope="col" class="px-5 py-4">Joined</th>
-					</tr>
-				</thead>
-				<tbody>
-					for _, user := range userList {
-						<tr class="border-t border-gray-100 dark:border-gray-700">
-							<td class="px-5 py-4 font-medium text-gray-900 dark:text-white">{ user.Name }</td>
-							<td class="px-5 py-4 text-gray-600 dark:text-gray-300">{ user.Email }</td>
-							<td class="px-5 py-4 text-gray-600 dark:text-gray-300">
-								if user.Mobile != nil && *user.Mobile != "" {
-									{ *user.Mobile }
-								} else {
-									<span class="text-gray-400">—</span>
-								}
-							</td>
-							<td class="px-5 py-4 text-gray-500 dark:text-gray-400">
-								if user.CreatedAt != nil {
-									{ user.CreatedAt.Format("Jan 2, 2006") }
-								} else {
-									<span>—</span>
-								}
-							</td>
-						</tr>
+		for _, role := range roleList {
+			<form action={ templ.URL(fmt.Sprintf("/dashboard/users/roles/%d", role.ID)) } method="POST" class="role-editor">
+				<label class="role-name">Role name<input name="name" maxlength="50" required value={ role.Name } /></label>
+				<div class="permission-grid">
+					for _, permission := range permissions {
+						<label><input type="checkbox" name="permissions" value={ permission } checked?={ roleHasPermission(role, permission) } />{ permission }</label>
 					}
-				</tbody>
-			</table>
-		</div>
-	}
+				</div>
+				<button type="submit">Save role</button>
+			</form>
+		}
+		<form action="/dashboard/users/roles" method="POST" class="role-editor">
+			<label class="role-name">Create role<input name="name" maxlength="50" placeholder="e.g. Support" required /></label>
+			<div class="permission-grid">
+				for _, permission := range permissions {
+					<label><input type="checkbox" name="permissions" value={ permission } />{ permission }</label>
+				}
+			</div>
+			<button type="submit">Create role</button>
+		</form>
+	</section>
 }

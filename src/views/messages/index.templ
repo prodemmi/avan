@@ -67,7 +67,7 @@ templ Index(messageList []sqlc.Message, templateList []sqlc.Template, providerLi
 			@components.IconButton("filter", FilterIcon())
 		</div>
 	</div>
-	<div id="filter-popover" class="flex gap-4">
+	<div id="filter-popover" class="flex gap-4" aria-label="Message filters">
 		<form action="/dashboard/messages" method="GET">
 			<input id="hprovider" name="provider" type="hidden" value=""/>
 			<input id="page" name="page" type="hidden" value="0"/>
@@ -150,14 +150,7 @@ templ Index(messageList []sqlc.Message, templateList []sqlc.Template, providerLi
 
 			const url = new URL(window.location);
 
-            popover.style.position = "absolute";
-            popover.style.top = "50px";
-            popover.style.right = "10px";
-            popover.style.padding = "10px";
-            popover.style.border = "1px solid #ccc";
-            popover.style.background = "#fff";
-            popover.style.zIndex = 200;
-            popover.style.display = "none";
+			popover.classList.remove("is-open");
 
 			provider.value = url.searchParams.get("provider") ?? "";
 			template.value = url.searchParams.get("template");
@@ -166,14 +159,16 @@ templ Index(messageList []sqlc.Message, templateList []sqlc.Template, providerLi
 			content.value = url.searchParams.get("content");
 			page.value = url.searchParams.get("page");
 
-            filterButton.addEventListener("click", function (event) {
-                event.stopPropagation();
-                popover.style.display = popover.style.display === "none" ? "block" : "none";
-            });
+			filterButton.addEventListener("click", function (event) {
+				event.stopPropagation();
+				const open = popover.classList.toggle("is-open");
+				filterButton.setAttribute("aria-expanded", String(open));
+			});
 
             document.addEventListener("click", function (event) {
-                if (!popover.contains(event.target) && event.target !== filterButton) {
-                    popover.style.display = "none";
+				if (!popover.contains(event.target) && event.target !== filterButton) {
+					popover.classList.remove("is-open");
+					filterButton.setAttribute("aria-expanded", "false");
                 }
             });
 

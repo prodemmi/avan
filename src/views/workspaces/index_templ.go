@@ -16,7 +16,7 @@ import (
 	"fmt"
 )
 
-func Index(workspaceList []sqlc.Workspace, page components.PageData) templ.Component {
+func Index(workspaceList []sqlc.Workspace, page components.PageData, ownerID int64) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -61,19 +61,19 @@ func Index(workspaceList []sqlc.Workspace, page components.PageData) templ.Compo
 		} else {
 			workspaces := table.ToTableMapList(workspaceList)
 			selectAction := func(row map[string]any) (string, string, string) {
-				if !row["IsDefault"].(bool) {
+				if row["OwnerID"].(int64) == ownerID && !row["IsDefault"].(bool) {
 					return "Set Default", fmt.Sprintf("/dashboard/workspaces/%d/setDefault", row["ID"]), "POST"
 				}
 				return "", "", ""
 			}
 			editAction := func(row map[string]any) (string, string, string) {
-				if row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
+				if row["OwnerID"].(int64) == ownerID && row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
 					return "Edit", fmt.Sprintf("/dashboard/workspaces/%d/edit", row["ID"]), "GET"
 				}
 				return "", "", ""
 			}
 			deleteAction := func(row map[string]any) (string, string, string) {
-				if row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
+				if row["OwnerID"].(int64) == ownerID && row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
 					return "Delete", fmt.Sprintf("/dashboard/workspaces/%d/delete", row["ID"]), "POST"
 				}
 				return "", "", ""

@@ -6,12 +6,7 @@ import (
 )
 
 templ TelegramForm(config sqlc.TelegramConfig) {
-	<div class="flex flex-col gap-4">
-		<div>
-			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="bot_token">
-				Bot Token
-			</label>
-			@components.Input("bot_token", "Enter Telegram bot token", config.BotToken)
-		</div>
+	<div class="provider-fields">
+		<div class="provider-field provider-field-wide"><label for="bot_token">Bot token</label>@components.OptionalPasswordInput("bot_token", "Leave blank to keep current", "")<p>For security, the saved token is not shown.</p></div>
 	</div>
 }

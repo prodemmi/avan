@@ -19,16 +19,14 @@ type WorkspaceService struct {
 }
 
 func (w WorkspaceService) GetWorkspaces(ctx context.Context, ownerID int64) ([]sqlc.Workspace, error) {
-	key := w.Cache.GetKey("workspaces", ownerID)
-	result, err := w.Cache.GetOrSetArray(key, time.Hour*24, func() ([]sqlc.Workspace, error) {
-		return w.Repo.ListWorkspaces(ctx, ownerID)
-	})
-
+	isAdmin, err := w.Repo.Base.IsConfiguredAdmin(ctx, ownerID)
 	if err != nil {
 		return nil, err
 	}
-
-	return result, nil
+	if isAdmin {
+		return w.Repo.ListAllWorkspaces(ctx)
+	}
+	return w.Repo.ListWorkspaces(ctx, ownerID)
 }
 
 func (w WorkspaceService) CreateWorkspace(name string, ownerID int64) (bool, error) {
@@ -47,6 +45,9 @@ func (w WorkspaceService) CreateWorkspace(name string, ownerID int64) (bool, err
 	}
 
 	w.SettingService.CreateDefaultSettings(workspace.ID)
+	if err := w.SettingService.UserService.EnsureDefaultRoles(ctx, workspace.ID); err != nil {
+		return false, err
+	}
 
 	return result, err
 }

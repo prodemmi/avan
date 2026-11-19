@@ -17,10 +17,11 @@ INSERT INTO messages (workspace_id,
                       content,
                       status,
                       error,
+                      retry,
                       schedule_at,
                       sent_at,
                       payload)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING id::BIGINT;
 
 -- name: MessageCountPostgresql :one

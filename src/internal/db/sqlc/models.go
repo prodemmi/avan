@@ -47,6 +47,7 @@ type Message struct {
 	SentAt      *time.Time `db:"sent_at" json:"sent_at"`
 	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
+	Retry       bool       `db:"retry" json:"retry"`
 }
 
 type Permission struct {
@@ -114,6 +115,7 @@ type SmsConfig struct {
 	IsAuthInHeader *bool      `db:"is_auth_in_header" json:"is_auth_in_header"`
 	CreatedAt      *time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt      *time.Time `db:"updated_at" json:"updated_at"`
+	BodySchema     *string    `db:"body_schema" json:"body_schema"`
 }
 
 type TelegramConfig struct {
@@ -145,6 +147,13 @@ type User struct {
 	Mobile      *string    `db:"mobile" json:"mobile"`
 	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
+}
+
+type UserRole struct {
+	WorkspaceID int64      `db:"workspace_id" json:"workspace_id"`
+	UserID      int64      `db:"user_id" json:"user_id"`
+	RoleID      int64      `db:"role_id" json:"role_id"`
+	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
 }
 
 type WebhookConfig struct {

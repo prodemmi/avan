@@ -14,7 +14,7 @@ import (
 	"avan/views/components"
 )
 
-func SlackForm(provider sqlc.SlackConfig) templ.Component {
+func SlackForm(config sqlc.SlackConfig) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -31,11 +31,11 @@ func SlackForm(provider sqlc.SlackConfig) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-4\"><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"webhook_url\">Webhook URL</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"provider-fields\"><div class=\"provider-field provider-field-wide\"><label for=\"slack_webhook_url\">Slack webhook URL</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.UrlInput("slack_webhook_url", "Enter Slack webhook URL", "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.UrlInput("slack_webhook_url", "https://hooks.slack.com/services/...", config.WebhookUrl).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

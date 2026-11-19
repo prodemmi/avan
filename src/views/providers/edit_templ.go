@@ -14,6 +14,7 @@ import (
 	"avan/views/components"
 	"avan/views/providers/edit_config_forms"
 	"fmt"
+	"strings"
 )
 
 func Edit(provider sqlc.Provider, configType string, config interface{}) templ.Component {
@@ -33,33 +34,33 @@ func Edit(provider sqlc.Provider, configType string, config interface{}) templ.C
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex justify-between\"><b>Edit Provider \"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"provider-form-page\"><a class=\"provider-back-link\" href=\"/dashboard/providers/\">← Back to providers</a><div class=\"provider-form-heading\"><span class=\"provider-form-icon\"><i class=\"ri-settings-3-line\" aria-hidden=\"true\"></i></span><div><span class=\"admin-eyebrow\">PROVIDER SETTINGS</span><h1>Edit provider</h1><p>Update the connection details for <strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(provider.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/edit.templ`, Line: 12, Col: 35}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/edit.templ`, Line: 16, Col: 142}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"</b><div></div></div><form class=\"bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 dark:bg-gray-800\" action=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</strong>.</p></div></div><form class=\"provider-config-form\" action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.URL(fmt.Sprintf("/dashboard/providers/%d/edit", provider.ID))).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/edit.templ`, Line: 15, Col: 155}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/edit.templ`, Line: 18, Col: 113}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" method=\"POST\"><div class=\"mb-4\"><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"name\">Provider name</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" method=\"POST\"><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\"><i class=\"ri-edit-line\" aria-hidden=\"true\"></i></span><div><h2>Provider details</h2><p>Update the display name for this connection.</p></div></div><div class=\"provider-fields\"><div class=\"provider-field\"><label for=\"name\">Provider name</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -67,7 +68,20 @@ func Edit(provider sqlc.Provider, configType string, config interface{}) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"provider-field provider-channel-summary\"><span>Channel</span><strong>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToUpper(configType))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/edit.templ`, Line: 23, Col: 115}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</strong></div></div></section><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">2</span><div><h2>Connection settings</h2><p>Credentials are stored with this workspace provider.</p></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -98,15 +112,7 @@ func Edit(provider sqlc.Provider, configType string, config interface{}) templ.C
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"mt-4\" style=\"width: 20dvw\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = components.SubmitButton(fmt.Sprintf("Update %s config", configType)).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</section><div class=\"provider-form-actions\"><a class=\"provider-cancel-button\" href=\"/dashboard/providers/\">Cancel</a> <button class=\"provider-save-button\" type=\"submit\"><i class=\"ri-check-line\" aria-hidden=\"true\"></i>Save changes</button></div></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

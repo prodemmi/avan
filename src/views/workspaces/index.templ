@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-templ Index(workspaceList []sqlc.Workspace, page components.PageData) {
+templ Index(workspaceList []sqlc.Workspace, page components.PageData, ownerID int64) {
 	<div class="flex justify-between">
 		<b>Workspaces</b>
 		if len(workspaceList) > 0 {
@@ -22,21 +22,21 @@ templ Index(workspaceList []sqlc.Workspace, page components.PageData) {
 	} else {
 		{{ workspaces := table.ToTableMapList(workspaceList) }}
 		{{selectAction := func(row map[string]any) (string, string, string) {
-	if !row["IsDefault"].(bool) {
+	if row["OwnerID"].(int64) == ownerID && !row["IsDefault"].(bool) {
 		return "Set Default", fmt.Sprintf("/dashboard/workspaces/%d/setDefault", row["ID"]), "POST"
 	}
 	return "", "", ""
 }
 		}}
 		{{editAction := func(row map[string]any) (string, string, string) {
-	if row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
+	if row["OwnerID"].(int64) == ownerID && row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
 		return "Edit", fmt.Sprintf("/dashboard/workspaces/%d/edit", row["ID"]), "GET"
 	}
 	return "", "", ""
 }
 		}}
 		{{deleteAction := func(row map[string]any) (string, string, string) {
-	if row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
+	if row["OwnerID"].(int64) == ownerID && row["ID"].(int64) != 1 && !row["IsDefault"].(bool) {
 		return "Delete", fmt.Sprintf("/dashboard/workspaces/%d/delete", row["ID"]), "POST"
 	}
 	return "", "", ""

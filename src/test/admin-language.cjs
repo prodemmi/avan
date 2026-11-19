@@ -21,6 +21,8 @@ const storage = new Map();
 
 vm.runInNewContext(readFileSync("public/admin.js", "utf8"), {
   document,
+  location: { pathname: "/dashboard/", href: "http://localhost/dashboard/" },
+  window: { matchMedia: () => ({ matches: false, addEventListener() {} }) },
   NodeFilter: { SHOW_TEXT: 4 },
   localStorage: {
     getItem: (key) => storage.get(key),

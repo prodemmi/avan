@@ -6,8 +6,8 @@ import (
 	"avan/internal/notifiers"
 	"avan/internal/services"
 	"encoding/json"
-	"errors"
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"time"
 )
 
@@ -23,6 +23,7 @@ type SendBody struct {
 	TemplateID *int64              `json:"template_id"`
 	Recipient  string              `json:"recipient" binding:"required"`
 	Message    string              `json:"message"`
+	Retry      bool                `json:"retry"`
 	ScheduleAt *time.Time          `json:"schedule_at"`
 	Data       *[]dto.TemplateData `json:"data"`
 	Payload    any                 `json:"payload"`
@@ -30,26 +31,35 @@ type SendBody struct {
 
 func (a ApiHandler) Send(c *gin.Context) {
 	var body SendBody
-	err := c.Bind(&body)
+	err := c.ShouldBindJSON(&body)
 	if err != nil {
-		SendError(c, err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	hasTemplate := body.TemplateID != nil
 	hasMessage := body.Message != ""
 
 	if !hasTemplate && !hasMessage {
-		err = errors.New("message is not set")
-		SendError(c, err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "message or template_id is required"})
 		return
 	}
 
 	message := body.Message
 	workspaceID := GetWorkspaceIDFromContext(c)
+	provider, err := a.ProviderService.GetProvider(body.ProviderID)
+	if err != nil || provider.WorkspaceID != workspaceID {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "provider not found in this workspace"})
+		return
+	}
 	if hasTemplate {
+		template, err := a.MessageService.TemplateService.GetTemplate(*body.TemplateID)
+		if err != nil || template.WorkspaceID != workspaceID {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "template not found in this workspace"})
+			return
+		}
 		message, err = a.MessageService.BindMessageData(*body.TemplateID, body.Data)
 		if err != nil {
-			SendError(c, err)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 	}
@@ -58,14 +68,14 @@ func (a ApiHandler) Send(c *gin.Context) {
 	if body.Payload != nil {
 		pay, err := json.Marshal(body.Payload)
 		if err != nil {
-			SendError(c, err)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		p := string(pay)
 		payload = &p
 	}
 
-	if err := a.ApiService.Send(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, body.ScheduleAt, payload); err != nil {
+	if err := a.ApiService.Send(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, body.Retry, body.ScheduleAt, payload); err != nil {
 		SendError(c, err)
 		return
 	}
@@ -75,26 +85,35 @@ func (a ApiHandler) Send(c *gin.Context) {
 
 func (a ApiHandler) QuickSend(c *gin.Context) {
 	var body SendBody
-	err := c.Bind(&body)
+	err := c.ShouldBindJSON(&body)
 	if err != nil {
-		SendError(c, err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	hasTemplate := body.TemplateID != nil
 	hasMessage := body.Message != ""
 
 	if !hasTemplate && !hasMessage {
-		err = errors.New("message is not set")
-		SendError(c, err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "message or template_id is required"})
 		return
 	}
 
 	message := body.Message
 	workspaceID := GetWorkspaceIDFromContext(c)
+	provider, err := a.ProviderService.GetProvider(body.ProviderID)
+	if err != nil || provider.WorkspaceID != workspaceID {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "provider not found in this workspace"})
+		return
+	}
 	if hasTemplate {
+		template, err := a.MessageService.TemplateService.GetTemplate(*body.TemplateID)
+		if err != nil || template.WorkspaceID != workspaceID {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "template not found in this workspace"})
+			return
+		}
 		message, err = a.MessageService.BindMessageData(*body.TemplateID, body.Data)
 		if err != nil {
-			SendError(c, err)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 	}
@@ -103,15 +122,22 @@ func (a ApiHandler) QuickSend(c *gin.Context) {
 	if body.Payload != nil {
 		pay, err := json.Marshal(body.Payload)
 		if err != nil {
-			SendError(c, err)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		p := string(pay)
 		payload = &p
 	}
+	if body.ScheduleAt != nil && body.ScheduleAt.After(time.Now()) {
+		if err := a.ApiService.Send(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, body.Retry, body.ScheduleAt, payload); err != nil {
+			SendError(c, err)
+			return
+		}
+		SendSuccess(c, "message scheduled")
+		return
+	}
 
-	sentAt := time.Now()
-	id, err := a.MessageService.CreateMessage(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, 1, nil, body.ScheduleAt, &sentAt, payload)
+	id, err := a.MessageService.CreateMessage(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, 1, nil, body.Retry, nil, nil, payload)
 	if err != nil {
 		SendError(c, err)
 		return
@@ -126,39 +152,34 @@ func (a ApiHandler) QuickSend(c *gin.Context) {
 		Recipient:   body.Recipient,
 		Content:     message,
 		Status:      1,
+		Retry:       body.Retry,
 		ScheduleAt:  nil,
-		SentAt:      &now,
+		Payload:     payload,
+		SentAt:      nil,
 		CreatedAt:   &now,
 		UpdatedAt:   &now,
 	}
 
-	provider, err := a.ProviderService.GetProvider(msg.ProviderID)
-	if err != nil {
-		SendError(c, err)
+	err = notifiers.SendWithRetry(func() error { return a.Notifier.SendMessage(provider, msg) }, body.Retry)
+	if err == nil {
+		if err := a.MessageService.MarkMessageAsSuccess(msg.ID); err != nil {
+			SendError(c, err)
+			return
+		}
+		SendSuccess(c, "message sent quickly")
 		return
 	}
 
-	commitMessage := func(err error) {
-		if err == nil {
-			_ = a.Notifier.MessageService.MarkMessageAsSuccess(msg.ID)
-		} else {
-			_ = a.Notifier.MessageService.MarkMessageAsError(msg.ID)
-		}
+	if !body.Retry {
+		_ = a.MessageService.MarkMessageAsError(msg.ID)
+		SendError(c, err)
+		return
 	}
-
-	retry := 3
-	for retry > 0 {
-		err = a.Notifier.SendMessage(provider, msg)
-		commitMessage(err)
-		if err == nil {
-			SendSuccess(c, "message sent quickly")
-			return
-		}
-		retry--
-		time.Sleep(500 * time.Millisecond)
+	if err := a.MessageService.MarkMessageAsPending(msg.ID); err != nil {
+		SendError(c, err)
+		return
 	}
-
-	if err := a.ApiService.Send(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, body.ScheduleAt, payload); err != nil {
+	if err := a.MessageService.ProduceMessageDirectly(msg.ProviderID, msg.ID); err != nil {
 		SendError(c, err)
 		return
 	}

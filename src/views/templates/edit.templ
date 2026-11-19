@@ -29,6 +29,7 @@ templ Edit(template sqlc.Template) {
 					Content
 				</label>
 				@components.Textarea("content", "Template content", template.Content)
+				<p class="template-variable-help">Write dynamic values as <code>$variable_name</code>; values are supplied through the API request's <code>data</code> list.</p>
 				<p id="values"></p>
 			</div>
 			@components.SubmitButton("Update Template")

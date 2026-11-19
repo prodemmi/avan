@@ -1,9 +1,12 @@
 package router
 
-import "github.com/gin-gonic/gin"
+import (
+	"avan/internal/middlewares"
+	"github.com/gin-gonic/gin"
+)
 
 func (r Router) GenerateWorkspaceRoutes(routerGroup *gin.RouterGroup) {
-	workspaces := routerGroup.Group("/workspaces")
+	workspaces := routerGroup.Group("/workspaces", middlewares.PermissionMiddleware(r.UserHandler.UserService, "workspaces.manage"))
 	{
 		workspaces.GET("/", r.WorkspaceHandler.Index)
 		workspaces.GET("/create", r.WorkspaceHandler.Create)

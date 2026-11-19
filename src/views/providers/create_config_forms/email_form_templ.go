@@ -28,55 +28,47 @@ func EmailForm() templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-4\"><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"smtp_host\">SMTP Host</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"provider-fields\"><div class=\"provider-field\"><label for=\"smtp_host\">SMTP host</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.Input("smtp_host", "Enter SMTP host", "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Input("smtp_host", "smtp.example.com", "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"smtp_port\">SMTP Port</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><div class=\"provider-field\"><label for=\"smtp_port\">SMTP port</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.NumberInput("smtp_port", "Enter SMTP port", nil).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.NumberInput("smtp_port", "587", nil).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"username\">Username</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div class=\"provider-field\"><label for=\"username\">Username <span>(optional)</span></label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.OptionalInput("username", "Enter SMTP username", "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.OptionalInput("username", "SMTP username", "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"password\">Password</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"provider-field\"><label for=\"password\">Password <span>(optional)</span></label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.OptionalPasswordInput("password", "Enter SMTP password", "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.OptionalPasswordInput("password", "SMTP password", "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"from_email\">From Email</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div class=\"provider-field provider-field-wide\"><label for=\"from_email\">From email</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.Input("from_email", "Enter from email address", "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Input("from_email", "notifications@example.com", "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><div class=\"mt-4\" style=\"width: 20dvw\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = components.SubmitButton("Create Email Config").Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

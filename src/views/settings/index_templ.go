@@ -123,49 +123,87 @@ func Index(settings []sqlc.Setting) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if color == primaryColor {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"w-8 h-8 rounded-full border-solid border-2 shadow-md border-blue-500 cursor-pointer dark:border-gray-800\" style=\"")
+			{
+				templ_7745c5c3_ElementWriter := templ_7745c5c3_Buffer
+				templ_7745c5c3_Buffer := templ.GetBuffer()
+				var templ_7745c5c3_ElementScripts []templ.ComponentScript
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<button type=\"submit\" class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(fmt.Sprintf("background-color: %s", color))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/settings/index.templ`, Line: 92, Col: 57}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" onclick=\"this.closest('form').submit()\"></div>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div class=\"w-8 h-8 rounded-full cursor-pointer\" style=\"")
+				var templ_7745c5c3_Var3 = []any{"color-swatch", templ.KV("is-selected", color == primaryColor)}
+				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var3...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var4 string
-				templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(fmt.Sprintf("background-color: %s", color))
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var3).String()).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/settings/index.templ`, Line: 98, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/settings/index.templ`, Line: 1, Col: 0}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" onclick=\"this.closest('form').submit()\"></div>")
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" style=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var5 string
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(fmt.Sprintf("background-color: %s", color))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/settings/index.templ`, Line: 89, Col: 149}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" aria-label=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var6 string
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fmt.Sprintf("Select primary color %s", color)).Resolve(ctx)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/settings/index.templ`, Line: 89, Col: 210}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" title=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var7 string
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(color).Resolve(ctx)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/settings/index.templ`, Line: 89, Col: 226}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_ElementScripts...)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteTo(templ_7745c5c3_ElementWriter)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<input type=\"submit\" class=\"absolute\" style=\"inset: 0;width: 100%;height: 100%;visibility: hidden;\"></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "></button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div></div></div><!-- Time and Date Settings --><div class=\"mb-6\"><h3 class=\"text-lg font-bold mb-2 text-gray-900 dark:text-gray-200\">Time & Date</h3><label class=\"block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2\" for=\"timezone\">Timezone</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</div></div></div><!-- Time and Date Settings --><div class=\"mb-6\"><h3 class=\"text-lg font-bold mb-2 text-gray-900 dark:text-gray-200\">Time & Date</h3><label class=\"block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2\" for=\"timezone\">Timezone</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -180,7 +218,7 @@ func Index(settings []sqlc.Setting) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</div><script>\n\t\tdocument.addEventListener(\"DOMContentLoaded\", function () {\n\t\t\tconst themeSelect = document.getElementById(\"theme\");\n\n\t\t\tif (themeSelect) {\n\t\t\t\tthemeSelect.addEventListener(\"change\", function () {\n\t\t\t\t\t// Create a form element\n\t\t\t\t\tconst form = document.createElement(\"form\");\n\t\t\t\t\tform.method = \"POST\";\n\t\t\t\t\tform.action = \"/dashboard/settings\"; // Change to your desired endpoint\n\n\t\t\t\t\t// Create hidden input for key\n\t\t\t\t\tconst keyInput = document.createElement(\"input\");\n\t\t\t\t\tkeyInput.type = \"hidden\";\n\t\t\t\t\tkeyInput.name = \"key\";\n\t\t\t\t\tkeyInput.value = \"theme\";\n\t\t\t\t\tform.appendChild(keyInput);\n\n\t\t\t\t\t// Create hidden input for value\n\t\t\t\t\tconst valueInput = document.createElement(\"input\");\n\t\t\t\t\tvalueInput.type = \"hidden\";\n\t\t\t\t\tvalueInput.name = \"value\";\n\t\t\t\t\tvalueInput.value = themeSelect.value; // New selected value\n\t\t\t\t\tform.appendChild(valueInput);\n\n\t\t\t\t\t// Append the form to body and submit it\n\t\t\t\t\tdocument.body.appendChild(form);\n\t\t\t\t\tform.submit();\n\t\t\t\t});\n\t\t\t}\n\n\t\t\tconst timezoneSelect = document.getElementById(\"timezone\");\n\n\t\t\tif (timezoneSelect) {\n\t\t\t\ttimezoneSelect.addEventListener(\"change\", function () {\n\t\t\t\t\t// Create a form element\n\t\t\t\t\tconst form = document.createElement(\"form\");\n\t\t\t\t\tform.method = \"POST\";\n\t\t\t\t\tform.action = \"/dashboard/settings\"; // Change to your desired endpoint\n\n\t\t\t\t\t// Create hidden input for key\n\t\t\t\t\tconst keyInput = document.createElement(\"input\");\n\t\t\t\t\tkeyInput.type = \"hidden\";\n\t\t\t\t\tkeyInput.name = \"key\";\n\t\t\t\t\tkeyInput.value = \"timezone\";\n\t\t\t\t\tform.appendChild(keyInput);\n\n\t\t\t\t\t// Create hidden input for value\n\t\t\t\t\tconst valueInput = document.createElement(\"input\");\n\t\t\t\t\tvalueInput.type = \"hidden\";\n\t\t\t\t\tvalueInput.name = \"value\";\n\t\t\t\t\tvalueInput.value = timezoneSelect.value; // New selected value\n\t\t\t\t\tform.appendChild(valueInput);\n\n\t\t\t\t\t// Append the form to body and submit it\n\t\t\t\t\tdocument.body.appendChild(form);\n\t\t\t\t\tform.submit();\n\t\t\t\t});\n\t\t\t}\n\t\t});\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div><script>\n\t\tdocument.addEventListener(\"DOMContentLoaded\", function () {\n\t\t\tconst themeSelect = document.getElementById(\"theme\");\n\n\t\t\tif (themeSelect) {\n\t\t\t\tthemeSelect.addEventListener(\"change\", function () {\n\t\t\t\t\t// Create a form element\n\t\t\t\t\tconst form = document.createElement(\"form\");\n\t\t\t\t\tform.method = \"POST\";\n\t\t\t\t\tform.action = \"/dashboard/settings\"; // Change to your desired endpoint\n\n\t\t\t\t\t// Create hidden input for key\n\t\t\t\t\tconst keyInput = document.createElement(\"input\");\n\t\t\t\t\tkeyInput.type = \"hidden\";\n\t\t\t\t\tkeyInput.name = \"key\";\n\t\t\t\t\tkeyInput.value = \"theme\";\n\t\t\t\t\tform.appendChild(keyInput);\n\n\t\t\t\t\t// Create hidden input for value\n\t\t\t\t\tconst valueInput = document.createElement(\"input\");\n\t\t\t\t\tvalueInput.type = \"hidden\";\n\t\t\t\t\tvalueInput.name = \"value\";\n\t\t\t\t\tvalueInput.value = themeSelect.value; // New selected value\n\t\t\t\t\tform.appendChild(valueInput);\n\n\t\t\t\t\t// Append the form to body and submit it\n\t\t\t\t\tdocument.body.appendChild(form);\n\t\t\t\t\tform.submit();\n\t\t\t\t});\n\t\t\t}\n\n\t\t\tconst timezoneSelect = document.getElementById(\"timezone\");\n\n\t\t\tif (timezoneSelect) {\n\t\t\t\ttimezoneSelect.addEventListener(\"change\", function () {\n\t\t\t\t\t// Create a form element\n\t\t\t\t\tconst form = document.createElement(\"form\");\n\t\t\t\t\tform.method = \"POST\";\n\t\t\t\t\tform.action = \"/dashboard/settings\"; // Change to your desired endpoint\n\n\t\t\t\t\t// Create hidden input for key\n\t\t\t\t\tconst keyInput = document.createElement(\"input\");\n\t\t\t\t\tkeyInput.type = \"hidden\";\n\t\t\t\t\tkeyInput.name = \"key\";\n\t\t\t\t\tkeyInput.value = \"timezone\";\n\t\t\t\t\tform.appendChild(keyInput);\n\n\t\t\t\t\t// Create hidden input for value\n\t\t\t\t\tconst valueInput = document.createElement(\"input\");\n\t\t\t\t\tvalueInput.type = \"hidden\";\n\t\t\t\t\tvalueInput.name = \"value\";\n\t\t\t\t\tvalueInput.value = timezoneSelect.value; // New selected value\n\t\t\t\t\tform.appendChild(valueInput);\n\n\t\t\t\t\t// Append the form to body and submit it\n\t\t\t\t\tdocument.body.appendChild(form);\n\t\t\t\t\tform.submit();\n\t\t\t\t});\n\t\t\t}\n\t\t});\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

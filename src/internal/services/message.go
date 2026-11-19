@@ -100,27 +100,29 @@ func (w MessageService) GetTimeDistribution(workspaceID, ownerID int64, startDat
 	})
 }
 
-func (w MessageService) CreateMessage(workspaceID, providerID int64, templateID *int64, recipient, content string, status int8, error *string, scheduleAt, sentAt *time.Time, payload *string) (int64, error) {
+func (w MessageService) CreateMessage(workspaceID, providerID int64, templateID *int64, recipient, content string, status int8, error *string, retry bool, scheduleAt, sentAt *time.Time, payload *string) (int64, error) {
 	ctx := context.Background()
 	key := w.MessageCache.GetKey("messages", workspaceID, providerID, templateID, status)
 	err := w.MessageCache.Delete(w.MessageCache.GetStringKey(key)...)
 	if err != nil {
 		return 0, err
 	}
-	return w.Repo.CreateMessage(ctx, workspaceID, providerID, templateID, recipient, content, status, error, scheduleAt, sentAt, payload)
+	return w.Repo.CreateMessage(ctx, workspaceID, providerID, templateID, recipient, content, status, error, retry, scheduleAt, sentAt, payload)
 }
 
-func (w MessageService) ProduceMessage(workspaceID, providerID int64, templateID *int64, recipient, content string, scheduleAt *time.Time, payload *string) error {
+func (w MessageService) ProduceMessage(workspaceID, providerID int64, templateID *int64, recipient, content string, retry bool, scheduleAt *time.Time, payload *string) error {
 	var status int8
 	status = 1
 
-	sentAt := time.Now()
-	id, err := w.CreateMessage(workspaceID, providerID, templateID, recipient, content, status, nil, scheduleAt, &sentAt, payload)
+	now := time.Now()
+	if scheduleAt != nil && !scheduleAt.After(now) {
+		scheduleAt = nil
+	}
+	id, err := w.CreateMessage(workspaceID, providerID, templateID, recipient, content, status, nil, retry, scheduleAt, nil, payload)
 	if err != nil {
 		return err
 	}
 
-	now := time.Now()
 	message := sqlc.Message{
 		ID:          id,
 		WorkspaceID: workspaceID,
@@ -129,14 +131,62 @@ func (w MessageService) ProduceMessage(workspaceID, providerID int64, templateID
 		Recipient:   recipient,
 		Content:     content,
 		Status:      int64(status),
+		Retry:       retry,
 		ScheduleAt:  scheduleAt,
 		Payload:     payload,
-		SentAt:      &sentAt,
 		CreatedAt:   &now,
 		UpdatedAt:   &now,
 	}
 
+	if scheduleAt != nil {
+		return nil
+	}
 	return w.enqueueMessage(message)
+}
+
+func (w MessageService) EnqueueDueScheduledMessages(ctx context.Context) error {
+	tx, err := w.Repo.Base.DB.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload,
+		       schedule_at, sent_at, created_at, updated_at, retry
+		FROM messages
+		WHERE status = 1 AND schedule_at IS NOT NULL AND schedule_at <= CURRENT_TIMESTAMP
+		ORDER BY schedule_at
+		LIMIT 10
+		FOR UPDATE SKIP LOCKED`)
+	if err != nil {
+		return err
+	}
+	var due []sqlc.Message
+	for rows.Next() {
+		var message sqlc.Message
+		if err := rows.Scan(&message.ID, &message.WorkspaceID, &message.ProviderID, &message.TemplateID, &message.Recipient, &message.Content, &message.Status, &message.Error, &message.Payload, &message.ScheduleAt, &message.SentAt, &message.CreatedAt, &message.UpdatedAt, &message.Retry); err != nil {
+			rows.Close()
+			return err
+		}
+		due = append(due, message)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, message := range due {
+		// ponytail: Postgres and Redis cannot commit atomically; a crash after XAdd can duplicate this send. Use an outbox if exactly-once delivery is required.
+		if err := w.enqueueMessage(message); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE messages SET schedule_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, message.ID); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (w MessageService) ProduceMessageDirectly(providerID, messageID int64) error {

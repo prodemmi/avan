@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-func Index(apiKeyList []sqlc.ApiKey, page components.PageData) templ.Component {
+func Index(apiKeyList []sqlc.ApiKey, page components.PageData, workspaceID int64) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -39,7 +39,7 @@ func Index(apiKeyList []sqlc.ApiKey, page components.PageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(apiKeyList) > 0 {
-			templ_7745c5c3_Err = components.Button("Create", "/dashboard/api-keys/create").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Button("Create", fmt.Sprintf("/dashboard/api-keys/create?workspace-id=%d", workspaceID)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -54,7 +54,7 @@ func Index(apiKeyList []sqlc.ApiKey, page components.PageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(apiKeyList) == 0 || apiKeyList == nil {
-			btn := components.Button("Create", "/dashboard/api-keys/create")
+			btn := components.Button("Create", fmt.Sprintf("/dashboard/api-keys/create?workspace-id=%d", workspaceID))
 			templ_7745c5c3_Err = components.EmptyState("No API Key has created", "Get started by creating a new API Key.", btn).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -62,7 +62,7 @@ func Index(apiKeyList []sqlc.ApiKey, page components.PageData) templ.Component {
 		} else {
 			apiKey := table.ToTableMapList(apiKeyList)
 			deleteAction := func(row map[string]any) (string, string, string) {
-				return "Delete", fmt.Sprintf("/dashboard/api-keys/%d/delete", row["ID"]), "POST"
+				return "Delete", fmt.Sprintf("/dashboard/api-keys/%d/delete?workspace-id=%d", row["ID"], workspaceID), "POST"
 			}
 			actions := []components.TableAction{deleteAction}
 			resolver := func(row map[string]any, header string) any {
