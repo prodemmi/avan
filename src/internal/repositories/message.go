@@ -30,7 +30,7 @@ func (w MessageRepository) MessageCount(ctx context.Context, workspaceID int64, 
 	})
 }
 
-func (w MessageRepository) CreateMessage(ctx context.Context, workspaceID, providerID int64, templateID *int64, recipient, content string, status int8, error *string, scheduleAt, sentAt *time.Time, payload *string) (int64, error) {
+func (w MessageRepository) CreateMessage(ctx context.Context, workspaceID, providerID int64, templateID *int64, recipient, content string, status int8, error *string, retry bool, scheduleAt, sentAt *time.Time, payload *string) (int64, error) {
 	return w.Base.DB.Queries.CreateMessagePostgresql(ctx, sqlc.CreateMessagePostgresqlParams{
 		WorkspaceID: workspaceID,
 		ProviderID:  providerID,
@@ -39,6 +39,7 @@ func (w MessageRepository) CreateMessage(ctx context.Context, workspaceID, provi
 		Content:     content,
 		Status:      int64(status),
 		Error:       error,
+		Retry:       retry,
 		ScheduleAt:  scheduleAt,
 		SentAt:      sentAt,
 		Payload:     payload,

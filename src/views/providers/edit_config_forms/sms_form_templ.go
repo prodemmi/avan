@@ -32,39 +32,94 @@ func SmsForm(config sqlc.SmsConfig) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-4\"><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"url\">URL</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"provider-fields\"><div class=\"provider-field provider-field-wide\"><label for=\"sms_url\">Provider URL</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.UrlInput("sms_url", "Enter provider url", config.Url).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.UrlInput("sms_url", "https://api.example.com/send", config.Url).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"url-data\"></div></div><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"method\">Method</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p>Use <code>$send_to</code> and <code>$message</code> in a GET URL when your gateway expects query parameters.</p></div><div class=\"provider-field\"><label for=\"sms_method\">HTTP method</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		options := []components.SelectOption{
-			{Value: "0", Label: "GET"},
-			{Value: "1", Label: "POST"},
-		}
+		options := []components.SelectOption{{Value: "0", Label: "GET"}, {Value: "1", Label: "POST"}}
 		templ_7745c5c3_Err = components.Select("sms_method", options, strconv.Itoa(int(config.Method))).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"sms_is_auth_in_header\">Authenticate in Header</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		isAuthInHeader := false
-		if config.IsAuthInHeader != nil {
-			isAuthInHeader = *config.IsAuthInHeader
+		{
+			templ_7745c5c3_ElementWriter := templ_7745c5c3_Buffer
+			templ_7745c5c3_Buffer := templ.GetBuffer()
+			var templ_7745c5c3_ElementScripts []templ.ComponentScript
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"sms-post-body\" class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var2 = []any{"provider-field", "provider-field-wide", "sms-post-body", templ.KV("hidden", config.Method != 1)}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var2...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var2).String()).Resolve(ctx)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/edit_config_forms/sms_form.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_ElementScripts...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteTo(templ_7745c5c3_ElementWriter)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "><label for=\"sms_body_schema\">POST body template (JSON)</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		bodySchema := `{"to":"$send_to","message":"$message"}`
+		if config.BodySchema != nil && *config.BodySchema != "" {
+			bodySchema = *config.BodySchema
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<textarea class=\"provider-json-editor\" id=\"sms_body_schema\" name=\"sms_body_schema\" rows=\"8\" spellcheck=\"false\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(bodySchema)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/edit_config_forms/sms_form.templ`, Line: 24, Col: 126}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</textarea><p>Available variables: <code>$send_to</code>, <code>$message</code>, <code>$payload</code>, <code>$retry</code>, <code>$schedule_at</code>, <code>$provider_id</code>, <code>$template_id</code>, <code>$workspace_id</code>. <code>$payload</code> inserts a JSON object and <code>$retry</code> a boolean.</p></div><div class=\"provider-field provider-field-inline\"><label for=\"sms_is_auth_in_header\">Send auth in header</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		isAuthInHeader := config.IsAuthInHeader != nil && *config.IsAuthInHeader
 		templ_7745c5c3_Err = components.Checkbox("sms_is_auth_in_header", isAuthInHeader).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"sms_auth_token_key\">Auth Token Key</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"provider-field\"><label for=\"sms_auth_token_key\">Auth token key</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -72,23 +127,19 @@ func SmsForm(config sqlc.SmsConfig) templ.Component {
 		if config.AuthTokenKey != nil {
 			authTokenKey = *config.AuthTokenKey
 		}
-		templ_7745c5c3_Err = components.OptionalInput("sms_auth_token_key", "Enter token key", authTokenKey).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.OptionalInput("sms_auth_token_key", "e.g. Authorization", authTokenKey).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"sms_auth_token_value\">Auth Token Value</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div><div class=\"provider-field\"><label for=\"sms_auth_token_value\">Auth token value</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		authTokenValue := ""
-		if config.AuthTokenValue != nil {
-			authTokenValue = *config.AuthTokenValue
-		}
-		templ_7745c5c3_Err = components.OptionalPasswordInput("sms_auth_token_value", "Enter token value", authTokenValue).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.OptionalPasswordInput("sms_auth_token_value", "Leave blank to keep current", "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div><script>\n        function validateUrl(url) {\n            return /^[a-z]+:\\/\\//i.test(url);\n        }\n\n        const urlInput = document.getElementById(\"url\")\n        if (urlInput) {\n            urlInput.oninput = (e) => {\n                const urlData = document.getElementById(\"url-data\");\n                if (urlInput) {\n                    let content = \"\"\n                    const value = e.target.value\n                    if (validateUrl(value)) {\n                        const searchParams = new URLSearchParams(e.target.value);\n                        searchParams.forEach((value, key) => {\n                            if (!key.startsWith(\"http\"))\n                                content += `<div><b>${key}</b>: ${value}</div>`\n                        })\n                        urlData.innerHTML= content\n                    } else {\n                        content = `<div class=\"text-red-500\">Not valid url</div>`\n                        urlData.innerHTML= content\n                    }\n                }\n            }\n        }\n    </script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<p>For security, the saved token is not shown.</p></div></div><script>\n\t\tconst methodSelect = document.getElementById(\"sms_method\");\n\t\tconst bodySchema = document.getElementById(\"sms-post-body\");\n\t\tconst updateBodyVisibility = () => bodySchema?.classList.toggle(\"hidden\", methodSelect?.value !== \"1\");\n\t\tmethodSelect?.addEventListener(\"change\", updateBodyVisibility);\n\t\tupdateBodyVisibility();\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -5,13 +5,8 @@ import (
 	"avan/views/components"
 )
 
-templ SlackForm(provider sqlc.SlackConfig) {
-	<div class="flex flex-col gap-4">
-		<div>
-			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="webhook_url">
-				Webhook URL
-			</label>
-			@components.UrlInput("slack_webhook_url", "Enter Slack webhook URL", "")
-		</div>
+templ SlackForm(config sqlc.SlackConfig) {
+	<div class="provider-fields">
+		<div class="provider-field provider-field-wide"><label for="slack_webhook_url">Slack webhook URL</label>@components.UrlInput("slack_webhook_url", "https://hooks.slack.com/services/...", config.WebhookUrl)</div>
 	</div>
 }

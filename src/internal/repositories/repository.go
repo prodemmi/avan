@@ -4,6 +4,7 @@ import (
 	"avan/internal/config"
 	"avan/internal/db"
 	"avan/internal/redis"
+	"context"
 	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -33,6 +34,15 @@ func (r Repository) HashPassword(password string) string {
 func (r Repository) CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func (r Repository) IsConfiguredAdmin(ctx context.Context, userID int64) (bool, error) {
+	if r.Config.AdminEmail == "" {
+		return false, nil
+	}
+	var isAdmin bool
+	err := r.DB.DB.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM users WHERE id = $1 AND LOWER(email) = LOWER($2))`, userID, r.Config.AdminEmail).Scan(&isAdmin)
+	return isAdmin, err
 }
 
 func NewRepository(config config.Config, DB db.Database, redis redis.Redis, logger zap.Logger) Repository {

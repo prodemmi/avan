@@ -9,9 +9,12 @@ package api_keys
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "avan/views/components"
+import (
+	"avan/views/components"
+	"fmt"
+)
 
-func Create() templ.Component {
+func Create(workspaceID int64) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -28,7 +31,20 @@ func Create() templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex justify-between\"><b>Create Api Key</b><div></div></div><div class=\"w-full\"><form class=\"bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 dark:bg-gray-900\" action=\"/dashboard/api-keys\" method=\"POST\"><div class=\"mb-4\"><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-100\" for=\"name\">Name</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex justify-between\"><b>Create Api Key</b><div></div></div><div class=\"w-full\"><form class=\"bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 dark:bg-gray-900\" action=\"/dashboard/api-keys\" method=\"POST\"><input type=\"hidden\" name=\"workspace-id\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var2 string
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fmt.Sprint(workspaceID)).Resolve(ctx)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/api_keys/create.templ`, Line: 15, Col: 75}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><div class=\"mb-4\"><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-100\" for=\"name\">Name</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -36,7 +52,7 @@ func Create() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><div class=\"mb-4\"><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-100\" for=\"expire_at\">Expire At</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div class=\"mb-4\"><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-100\" for=\"expire_at\">Expire At</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -53,7 +69,7 @@ func Create() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -61,7 +77,7 @@ func Create() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

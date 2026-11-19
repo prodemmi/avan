@@ -3,43 +3,7 @@ package create_config_forms
 import "avan/views/components"
 
 templ WebhookForm() {
-	<div class="flex flex-col gap-4">
-		<div>
-			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="url">
-				URL
-			</label>
-			@components.UrlInput("webhook_url", "Enter provider url", "")
-			<div id="url-data"></div>
-		</div>
-		<div class="mt-4" style="width: 20dvw">
-			@components.SubmitButton("Create Webhook Config")
-		</div>
+	<div class="provider-fields">
+		<div class="provider-field provider-field-wide"><label for="webhook_url">Webhook URL</label>@components.UrlInput("webhook_url", "https://example.com/webhook", "")<p>Avan sends this endpoint a JSON request when a message is queued.</p></div>
 	</div>
-	<script>
-    function validateUrl(url) {
-        return /^[a-z]+:\/\//i.test(url);
-    }
-
-    const urlInput = document.getElementById("url")
-    if (urlInput) {
-        urlInput.oninput = (e) => {
-            const urlData = document.getElementById("url-data");
-            if (urlInput) {
-                let content = ""
-                const value = e.target.value
-                if (validateUrl(value)) {
-                    const searchParams = new URLSearchParams(e.target.value);
-                    searchParams.forEach((value, key) => {
-                        if (!key.startsWith("http"))
-                            content += `<div><b>${key}</b>: ${value}</div>`
-                    })
-                    urlData.innerHTML= content
-                } else {
-                    content = `<div class="text-red-500">Not valid url</div>`
-                    urlData.innerHTML= content
-                }
-            }
-        }
-    }
-</script>
 }

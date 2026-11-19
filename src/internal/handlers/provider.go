@@ -5,8 +5,10 @@ import (
 	"avan/views/components"
 	"avan/views/layout"
 	"avan/views/providers"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,10 +27,11 @@ func (w ProviderHandler) Index(c *gin.Context) {
 	}
 
 	userID := GetUserIDFromContext(c)
-	workspace, err := w.WorkspaceService.GetDefaultWorkspace(userID)
-	sendError(err)
-
-	_providers, _ := w.ProviderService.GetProviders(workspace.ID, userID)
+	_providers, err := w.ProviderService.GetProviders(GetWorkspaceIDFromContext(c), userID)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 
 	currentPageStr := c.Query("page")
 	currentPage, _ := ConvertToInt32(currentPageStr)
@@ -48,7 +51,7 @@ func (w ProviderHandler) Index(c *gin.Context) {
 
 func (w ProviderHandler) Create(c *gin.Context) {
 	typeParam := c.Param("type")
-	if typeParam == "" {
+	if typeParam != "sms" && typeParam != "email" && typeParam != "telegram" && typeParam != "slack" && typeParam != "webhook" {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
@@ -71,6 +74,7 @@ func (w ProviderHandler) Store(c *gin.Context) {
 		SmsAuthTokenKey   *string `form:"sms_auth_token_key"`
 		SmsAuthTokenValue *string `form:"sms_auth_token_value"`
 		SmsIsAuthInHeader *bool   `form:"sms_is_auth_in_header,default=false"`
+		SmsBodySchema     *string `form:"sms_body_schema"`
 
 		// Email Input
 		SMTPHost  *string `form:"smtp_host"`
@@ -106,37 +110,49 @@ func (w ProviderHandler) Store(c *gin.Context) {
 
 	err := c.Bind(&body)
 	sendError(err)
+	if err != nil {
+		return
+	}
 
 	ownerID := GetUserIDFromContext(c)
-	workspace, err := w.WorkspaceService.GetDefaultWorkspace(ownerID)
-	sendError(err)
+	workspaceID := GetWorkspaceIDFromContext(c)
 
 	switch typeParam {
 	case "sms":
-		provider, err := w.ProviderService.CreateProvider(workspace.ID, ownerID, 0, body.Name)
+		if body.SmsBodySchema != nil && strings.TrimSpace(*body.SmsBodySchema) != "" && !json.Valid([]byte(*body.SmsBodySchema)) {
+			c = ContextWithError(c, "SMS body schema must be valid JSON")
+			w.Create(c)
+			return
+		}
+		if body.SmsURL == nil || body.SmsMethod == nil {
+			c = ContextWithError(c, "SMS URL and method are required")
+			w.Create(c)
+			return
+		}
+		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 0, body.Name)
 		sendError(err)
-		err = w.ProviderService.CreateSmsConfig(workspace.ID, provider.ID, ownerID, *body.SmsURL, int32(*body.SmsMethod), body.SmsAuthTokenKey, body.SmsAuthTokenValue, body.SmsIsAuthInHeader)
+		err = w.ProviderService.CreateSmsConfig(workspaceID, provider.ID, ownerID, *body.SmsURL, int32(*body.SmsMethod), body.SmsAuthTokenKey, body.SmsAuthTokenValue, body.SmsIsAuthInHeader, body.SmsBodySchema)
 		sendError(err)
 		break
 	case "email":
-		provider, err := w.ProviderService.CreateProvider(workspace.ID, ownerID, 1, body.Name)
+		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 1, body.Name)
 		sendError(err)
-		err = w.ProviderService.CreateEmailConfig(workspace.ID, provider.ID, ownerID, *body.SMTPHost, *body.SMTPPort, *body.FromEmail, body.Username, body.Password)
+		err = w.ProviderService.CreateEmailConfig(workspaceID, provider.ID, ownerID, *body.SMTPHost, *body.SMTPPort, *body.FromEmail, body.Username, body.Password)
 		sendError(err)
 	case "telegram":
-		provider, err := w.ProviderService.CreateProvider(workspace.ID, ownerID, 2, body.Name)
+		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 2, body.Name)
 		sendError(err)
-		err = w.ProviderService.CreateTelegramConfig(workspace.ID, provider.ID, ownerID, *body.BotToken)
+		err = w.ProviderService.CreateTelegramConfig(workspaceID, provider.ID, ownerID, *body.BotToken)
 		sendError(err)
 	case "slack":
-		provider, err := w.ProviderService.CreateProvider(workspace.ID, ownerID, 3, body.Name)
+		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 3, body.Name)
 		sendError(err)
-		err = w.ProviderService.CreateSlackConfig(workspace.ID, provider.ID, ownerID, *body.WebhookUrl)
+		err = w.ProviderService.CreateSlackConfig(workspaceID, provider.ID, ownerID, *body.WebhookUrl)
 		sendError(err)
 	case "webhook":
-		provider, err := w.ProviderService.CreateProvider(workspace.ID, ownerID, 4, body.Name)
+		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 4, body.Name)
 		sendError(err)
-		err = w.ProviderService.CreateWebhookConfig(workspace.ID, provider.ID, ownerID, *body.WebhookURL)
+		err = w.ProviderService.CreateWebhookConfig(workspaceID, provider.ID, ownerID, *body.WebhookURL)
 		sendError(err)
 	}
 
@@ -163,7 +179,14 @@ func (w ProviderHandler) Edit(c *gin.Context) {
 	sendIfError(err)
 
 	provider, err := w.ProviderService.GetProvider(providerID)
-	sendIfError(err)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	if provider.WorkspaceID != GetWorkspaceIDFromContext(c) {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 
 	var config interface{}
 	var configErr error
@@ -210,6 +233,7 @@ func (w ProviderHandler) Update(c *gin.Context) {
 		SmsAuthTokenKey   *string `form:"sms_auth_token_key"`
 		SmsAuthTokenValue *string `form:"sms_auth_token_value"`
 		SmsIsAuthInHeader *bool   `form:"sms_is_auth_in_header,default=false"`
+		SmsBodySchema     *string `form:"sms_body_schema"`
 
 		// Email Input
 		SMTPHost  *string `form:"smtp_host"`
@@ -246,19 +270,39 @@ func (w ProviderHandler) Update(c *gin.Context) {
 
 	err := c.Bind(&body)
 	sendError(err)
+	if err != nil {
+		return
+	}
 
 	providerID, err := ConvertToInt64(providerIDParam)
 	sendError(err)
 
 	provider, err := w.ProviderService.GetProvider(providerID)
-	sendError(err)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	if provider.WorkspaceID != GetWorkspaceIDFromContext(c) {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 
 	err = w.ProviderService.UpdateProvider(providerID, body.Name)
 	sendError(err)
 
 	switch provider.ConfigType {
 	case 0:
-		err = w.ProviderService.UpdateSmsConfig(provider.ID, *body.SmsURL, int32(*body.SmsMethod), body.SmsAuthTokenKey, body.SmsAuthTokenValue, body.SmsIsAuthInHeader)
+		if body.SmsBodySchema != nil && strings.TrimSpace(*body.SmsBodySchema) != "" && !json.Valid([]byte(*body.SmsBodySchema)) {
+			c = ContextWithError(c, "SMS body schema must be valid JSON")
+			w.Edit(c)
+			return
+		}
+		if body.SmsURL == nil || body.SmsMethod == nil {
+			c = ContextWithError(c, "SMS URL and method are required")
+			w.Edit(c)
+			return
+		}
+		err = w.ProviderService.UpdateSmsConfig(provider.ID, *body.SmsURL, int32(*body.SmsMethod), body.SmsAuthTokenKey, body.SmsAuthTokenValue, body.SmsIsAuthInHeader, body.SmsBodySchema)
 		sendError(err)
 		break
 	case 1:
@@ -298,6 +342,14 @@ func (w ProviderHandler) Delete(c *gin.Context) {
 
 	id, err := ConvertToInt64(idParam)
 	sendIfError(err)
+	if err != nil {
+		return
+	}
+	provider, err := w.ProviderService.GetProvider(id)
+	if err != nil || provider.WorkspaceID != GetWorkspaceIDFromContext(c) {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 
 	err = w.ProviderService.DeleteProvider(id)
 	sendIfError(err)

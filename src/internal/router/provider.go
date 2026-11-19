@@ -1,11 +1,12 @@
 package router
 
 import (
+	"avan/internal/middlewares"
 	"github.com/gin-gonic/gin"
 )
 
 func (r Router) GenerateProviderRoutes(group *gin.RouterGroup) {
-	providers := group.Group("/providers")
+	providers := group.Group("/providers", middlewares.PermissionMiddleware(r.UserHandler.UserService, "providers.manage"))
 	{
 		providers.GET("/", r.ProviderHandler.Index)
 		providers.GET("/create/:type", r.ProviderHandler.Create)

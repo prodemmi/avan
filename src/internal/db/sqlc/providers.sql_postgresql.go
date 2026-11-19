@@ -95,8 +95,8 @@ func (q *Queries) CreateSlackConfigPostgresql(ctx context.Context, arg CreateSla
 }
 
 const createSmsConfigPostgresql = `-- name: CreateSmsConfigPostgresql :exec
-INSERT INTO sms_configs (workspace_id, provider_id, owner_id, url, method, auth_token_key, auth_token_value, is_auth_in_header)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO sms_configs (workspace_id, provider_id, owner_id, url, method, auth_token_key, auth_token_value, is_auth_in_header, body_schema)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type CreateSmsConfigPostgresqlParams struct {
@@ -108,6 +108,7 @@ type CreateSmsConfigPostgresqlParams struct {
 	AuthTokenKey   *string `db:"auth_token_key" json:"auth_token_key"`
 	AuthTokenValue *string `db:"auth_token_value" json:"auth_token_value"`
 	IsAuthInHeader *bool   `db:"is_auth_in_header" json:"is_auth_in_header"`
+	BodySchema     *string `db:"body_schema" json:"body_schema"`
 }
 
 func (q *Queries) CreateSmsConfigPostgresql(ctx context.Context, arg CreateSmsConfigPostgresqlParams) error {
@@ -120,6 +121,7 @@ func (q *Queries) CreateSmsConfigPostgresql(ctx context.Context, arg CreateSmsCo
 		arg.AuthTokenKey,
 		arg.AuthTokenValue,
 		arg.IsAuthInHeader,
+		arg.BodySchema,
 	)
 	return err
 }
@@ -273,7 +275,7 @@ func (q *Queries) GetSlackConfigPostgresql(ctx context.Context, providerID int64
 }
 
 const getSmsConfigPostgresql = `-- name: GetSmsConfigPostgresql :one
-SELECT id, workspace_id, owner_id, provider_id, url, method, auth_token_key, auth_token_value, is_auth_in_header, created_at, updated_at FROM sms_configs
+SELECT id, workspace_id, owner_id, provider_id, url, method, auth_token_key, auth_token_value, is_auth_in_header, created_at, updated_at, body_schema FROM sms_configs
 WHERE provider_id = $1
 `
 
@@ -292,6 +294,7 @@ func (q *Queries) GetSmsConfigPostgresql(ctx context.Context, providerID int64) 
 		&i.IsAuthInHeader,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BodySchema,
 	)
 	return i, err
 }
@@ -338,17 +341,12 @@ func (q *Queries) GetWebhookConfigPostgresql(ctx context.Context, providerID int
 
 const listProvidersPostgresql = `-- name: ListProvidersPostgresql :many
 SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at FROM providers
-WHERE workspace_id = $1 AND owner_id = $2
+WHERE workspace_id = $1
 ORDER BY created_at DESC
 `
 
-type ListProvidersPostgresqlParams struct {
-	WorkspaceID int64 `db:"workspace_id" json:"workspace_id"`
-	OwnerID     int64 `db:"owner_id" json:"owner_id"`
-}
-
-func (q *Queries) ListProvidersPostgresql(ctx context.Context, arg ListProvidersPostgresqlParams) ([]Provider, error) {
-	rows, err := q.db.QueryContext(ctx, listProvidersPostgresql, arg.WorkspaceID, arg.OwnerID)
+func (q *Queries) ListProvidersPostgresql(ctx context.Context, workspaceID int64) ([]Provider, error) {
+	rows, err := q.db.QueryContext(ctx, listProvidersPostgresql, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -380,17 +378,17 @@ func (q *Queries) ListProvidersPostgresql(ctx context.Context, arg ListProviders
 
 const updateEmailConfigPostgresql = `-- name: UpdateEmailConfigPostgresql :exec
 UPDATE email_configs
-SET smtp_host = $1, smtp_port = $2, username = $3, password = $4, from_email = $5
+SET smtp_host = $1, smtp_port = $2, username = $3, password = COALESCE(NULLIF($4, ''), password), from_email = $5
 WHERE provider_id = $6
 `
 
 type UpdateEmailConfigPostgresqlParams struct {
-	SmtpHost   string  `db:"smtp_host" json:"smtp_host"`
-	SmtpPort   int64   `db:"smtp_port" json:"smtp_port"`
-	Username   *string `db:"username" json:"username"`
-	Password   *string `db:"password" json:"password"`
-	FromEmail  string  `db:"from_email" json:"from_email"`
-	ProviderID int64   `db:"provider_id" json:"provider_id"`
+	SmtpHost   string      `db:"smtp_host" json:"smtp_host"`
+	SmtpPort   int64       `db:"smtp_port" json:"smtp_port"`
+	Username   *string     `db:"username" json:"username"`
+	Column4    interface{} `db:"column_4" json:"column_4"`
+	FromEmail  string      `db:"from_email" json:"from_email"`
+	ProviderID int64       `db:"provider_id" json:"provider_id"`
 }
 
 func (q *Queries) UpdateEmailConfigPostgresql(ctx context.Context, arg UpdateEmailConfigPostgresqlParams) error {
@@ -398,7 +396,7 @@ func (q *Queries) UpdateEmailConfigPostgresql(ctx context.Context, arg UpdateEma
 		arg.SmtpHost,
 		arg.SmtpPort,
 		arg.Username,
-		arg.Password,
+		arg.Column4,
 		arg.FromEmail,
 		arg.ProviderID,
 	)
@@ -442,18 +440,20 @@ UPDATE sms_configs
 SET url = $2,
     method = $3,
     auth_token_key = $4,
-    auth_token_value = $5,
-    is_auth_in_header  = $6
+    auth_token_value = COALESCE(NULLIF($5, ''), auth_token_value),
+    is_auth_in_header  = $6,
+    body_schema = $7
 WHERE provider_id = $1
 `
 
 type UpdateSmsConfigPostgresqlParams struct {
-	ProviderID     int64   `db:"provider_id" json:"provider_id"`
-	Url            string  `db:"url" json:"url"`
-	Method         int64   `db:"method" json:"method"`
-	AuthTokenKey   *string `db:"auth_token_key" json:"auth_token_key"`
-	AuthTokenValue *string `db:"auth_token_value" json:"auth_token_value"`
-	IsAuthInHeader *bool   `db:"is_auth_in_header" json:"is_auth_in_header"`
+	ProviderID     int64       `db:"provider_id" json:"provider_id"`
+	Url            string      `db:"url" json:"url"`
+	Method         int64       `db:"method" json:"method"`
+	AuthTokenKey   *string     `db:"auth_token_key" json:"auth_token_key"`
+	Column5        interface{} `db:"column_5" json:"column_5"`
+	IsAuthInHeader *bool       `db:"is_auth_in_header" json:"is_auth_in_header"`
+	BodySchema     *string     `db:"body_schema" json:"body_schema"`
 }
 
 func (q *Queries) UpdateSmsConfigPostgresql(ctx context.Context, arg UpdateSmsConfigPostgresqlParams) error {
@@ -462,25 +462,26 @@ func (q *Queries) UpdateSmsConfigPostgresql(ctx context.Context, arg UpdateSmsCo
 		arg.Url,
 		arg.Method,
 		arg.AuthTokenKey,
-		arg.AuthTokenValue,
+		arg.Column5,
 		arg.IsAuthInHeader,
+		arg.BodySchema,
 	)
 	return err
 }
 
 const updateTelegramConfigPostgresql = `-- name: UpdateTelegramConfigPostgresql :exec
 UPDATE telegram_configs
-SET bot_token = $1
+SET bot_token = COALESCE(NULLIF($1, ''), bot_token)
 WHERE provider_id = $2
 `
 
 type UpdateTelegramConfigPostgresqlParams struct {
-	BotToken   string `db:"bot_token" json:"bot_token"`
-	ProviderID int64  `db:"provider_id" json:"provider_id"`
+	Column1    interface{} `db:"column_1" json:"column_1"`
+	ProviderID int64       `db:"provider_id" json:"provider_id"`
 }
 
 func (q *Queries) UpdateTelegramConfigPostgresql(ctx context.Context, arg UpdateTelegramConfigPostgresqlParams) error {
-	_, err := q.db.ExecContext(ctx, updateTelegramConfigPostgresql, arg.BotToken, arg.ProviderID)
+	_, err := q.db.ExecContext(ctx, updateTelegramConfigPostgresql, arg.Column1, arg.ProviderID)
 	return err
 }
 

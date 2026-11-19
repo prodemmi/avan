@@ -68,7 +68,7 @@ templ Table(rows []map[string]any, headers []string, actions []TableAction, reso
 							</td>
 						}
 						if len(actions) > 0 {
-							<td scope="row" class="flex gap-2 px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+							<td scope="row" class="table-actions flex gap-2 px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
 								for _, action := range actions {
 									{{ name, url, method := action(row) }}
 									if len(name) > 0 && len(url) > 0 && len(method) > 0 {

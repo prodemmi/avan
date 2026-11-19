@@ -1,0 +1,139 @@
+package developer
+
+import (
+	"avan/internal/db/sqlc"
+	"fmt"
+)
+
+func providerTypeName(configType int64) string {
+	switch configType {
+	case 0:
+		return "SMS"
+	case 1:
+		return "Email"
+	case 2:
+		return "Telegram"
+	case 3:
+		return "Slack"
+	case 4:
+		return "Webhook"
+	default:
+		return "—"
+	}
+}
+
+templ Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sqlc.Provider, selectedProvider sqlc.Provider) {
+	<div class="developer-page-heading">
+		<div>
+			<span class="admin-eyebrow">WORKSPACE</span>
+			<h1 class="text-2xl font-bold">Developer</h1>
+			<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">API documentation, examples, and interactive reference for your integration.</p>
+		</div>
+		<form action="/dashboard/developer" method="GET" class="developer-workspace-select">
+			<label class="filter-field" for="workspace-id">Workspace
+				<select id="workspace-id" name="workspace-id" onchange="this.form.requestSubmit()">
+					for _, workspace := range workspaces {
+						<option value={ fmt.Sprint(workspace.ID) } selected?={ workspace.ID == selected.ID }>{ workspace.Name }</option>
+					}
+				</select>
+			</label>
+			<label class="filter-field" for="provider-id">Provider
+				<select id="provider-id" name="provider-id" onchange="this.form.requestSubmit()">
+					if len(providers) == 0 {
+						<option value="">No providers configured</option>
+					} else {
+						for _, provider := range providers {
+							<option value={ fmt.Sprint(provider.ID) } selected?={ provider.ID == selectedProvider.ID }>{ provider.Name } · { providerTypeName(provider.ConfigType) }</option>
+						}
+					}
+				</select>
+			</label>
+		</form>
+	</div>
+	<div class="developer-docs">
+		<section class="developer-provider-card">
+			<div>
+				<h2 class="text-lg font-semibold">Selected provider</h2>
+				<p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Examples and the OpenAPI reference use this provider in the selected workspace.</p>
+			</div>
+			if selectedProvider.ID > 0 {
+				<div class="developer-provider-meta">
+					<div><span>Provider</span><strong>{ selectedProvider.Name }</strong></div>
+					<div><span>Type</span><strong>{ providerTypeName(selectedProvider.ConfigType) }</strong></div>
+					<div><span>Provider ID</span><code>{ fmt.Sprint(selectedProvider.ID) }</code></div>
+				</div>
+			} else {
+				<p class="developer-empty-provider">No provider exists in this workspace yet. Create one before sending messages.</p>
+				<a class="developer-api-keys-link" href="/dashboard/providers/create/sms">Create an SMS provider</a>
+			}
+		</section>
+		<section>
+			<h2 class="text-lg font-semibold">Authentication</h2>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Use an API key created for the selected workspace in the <code>X-API-KEY</code> header. Keep keys private and rotate or delete them from API Keys.</p>
+			<a class="developer-api-keys-link" href={ templ.URL(fmt.Sprintf("/dashboard/api-keys?workspace-id=%d", selected.ID)) }>Manage API keys for { selected.Name }</a>
+			<pre>{ `curl -X POST "https://your-avan-host/api/send" \
+  -H "Content-Type: application/json" \
+  -H "X-API-KEY: YOUR_API_KEY" \
+  -d '{"provider_id":` + fmt.Sprint(selectedProvider.ID) + `,"recipient":"+989120000000","message":"Hello","retry":true}'` }</pre>
+		</section>
+		<section>
+			<h2 class="text-lg font-semibold">Send message</h2>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300"><code>POST /api/send</code> queues a message. Provide either <code>message</code>, or <code>template_id</code> with template <code>data</code>. Set <code>retry</code> to <code>true</code> to retry provider failures up to three times; it defaults to <code>false</code>. Optional <code>schedule_at</code> is an RFC 3339 timestamp.</p>
+			<pre>{ fmt.Sprintf(`{
+  "provider_id": %d,
+  "recipient": "+989120000000",
+  "message": "Hello $first_name",
+  "data": [{"key":"first_name","value":"Sara"}],
+  "retry": true,
+  "schedule_at": "2026-12-01T09:30:00Z",
+  "payload": {"campaign":"welcome"}
+}`, selectedProvider.ID) }</pre>
+			<p class="mt-2 text-sm">Success <code>200</code></p>
+			<pre>{ `{"data":"message added to the queue"}` }</pre>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Errors: <code>400</code> invalid JSON or provider/template outside the selected workspace; <code>401</code> missing, invalid, or expired API key; <code>500</code> database or queue failure. Error body: <code>{ `{"error":"description"}` }</code>.</p>
+		</section>
+		<section>
+			<h2 class="text-lg font-semibold">Template variables</h2>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Write any variable as <code>$variable_name</code> in a template. Send a matching key/value pair in <code>data</code>; for example <code>$first_name</code> is replaced by the item with key <code>first_name</code>. Variable names are your choice.</p>
+			<pre>{ `"template_id": 12,
+"data": [
+  {"key":"first_name","value":"Sara"},
+  {"key":"order_id","value":"A-1024"}
+]` }</pre>
+		</section>
+		<section>
+			<h2 class="text-lg font-semibold">SMS POST body variables</h2>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Configure the JSON body template on the SMS provider. Writable variables: <code>$send_to</code>, <code>$message</code>, <code>$payload</code>, <code>$retry</code>, <code>$schedule_at</code>, <code>$provider_id</code>, <code>$template_id</code>, and <code>$workspace_id</code>. <code>$payload</code> inserts a JSON object; <code>$retry</code> inserts a boolean.</p>
+			<pre>{ `{
+  "to": "$send_to",
+  "message": "$message",
+  "retry": "$retry",
+  "campaign": "$payload"
+}` }</pre>
+		</section>
+		<section>
+			<h2 class="text-lg font-semibold">Schedule message</h2>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Set <code>schedule_at</code> to a future RFC 3339 timestamp, such as <code>2026-12-01T09:30:00Z</code>. Avan stores the message and queues it when it is due. Omit the field to send as soon as possible.</p>
+		</section>
+		<section>
+			<h2 class="text-lg font-semibold">Quick send</h2>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300"><code>POST /api/quick-send</code> attempts delivery immediately. With <code>retry: true</code>, it makes up to three immediate attempts and queues the message for background retry if those fail. With <code>retry: false</code>, it makes one attempt and reports a provider failure. Future <code>schedule_at</code> values are scheduled instead of sent immediately.</p>
+			<p class="mt-2 text-sm">Success is <code>200</code> with <code>{ `{"data":"message sent quickly"}` }</code>, <code>{ `{"data":"message scheduled"}` }</code>, or <code>{ `{"data":"message added to the queue"}` }</code>. It uses the same request body and <code>400</code>, <code>401</code>, and <code>500</code> error format as <code>/api/send</code>.</p>
+		</section>
+		<section>
+			<h2 class="text-lg font-semibold">Interactive API reference</h2>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Try the documented endpoints with your API key. Do not paste production keys into shared browsers.</p>
+			<div id="swagger-ui" data-spec-url={ fmt.Sprintf("/dashboard/developer/openapi.json?workspace-id=%d&provider-id=%d", selected.ID, selectedProvider.ID) }></div>
+		</section>
+	</div>
+	<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+	<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+	<script>
+		window.addEventListener("load", () => SwaggerUIBundle({
+			url: document.getElementById("swagger-ui").dataset.specUrl,
+			dom_id: "#swagger-ui",
+			deepLinking: true,
+			persistAuthorization: false
+		}));
+	</script>
+}

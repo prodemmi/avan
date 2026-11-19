@@ -19,4 +19,12 @@ func TestAnalysisDateRange(t *testing.T) {
 	if _, _, err = analysisDateRange("custom", "2026-01-10", "2026-01-09", now); err == nil {
 		t.Fatal("expected reversed custom range to fail")
 	}
+
+	jalali, err := parseFilterDate("۱۴۰۳/۰۱/۰۱")
+	if err != nil || jalali.Format(time.DateOnly) != "2024-03-20" {
+		t.Fatalf("Jalali date = (%v, %v)", jalali, err)
+	}
+	if _, err := parseFilterDate("1402/12/30"); err == nil {
+		t.Fatal("expected invalid Jalali leap day to fail")
+	}
 }

@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -25,6 +26,31 @@ type CreateAdminUserPostgresqlParams struct {
 func (q *Queries) CreateAdminUserPostgresql(ctx context.Context, arg CreateAdminUserPostgresqlParams) error {
 	_, err := q.db.ExecContext(ctx, createAdminUserPostgresql, arg.Email, arg.Password, arg.WorkspaceID)
 	return err
+}
+
+const createWorkspaceUserPostgresql = `-- name: CreateWorkspaceUserPostgresql :one
+INSERT INTO users (workspace_id, name, email, password)
+VALUES ($1, $2, $3, $4)
+RETURNING id
+`
+
+type CreateWorkspaceUserPostgresqlParams struct {
+	WorkspaceID int64  `db:"workspace_id" json:"workspace_id"`
+	Name        string `db:"name" json:"name"`
+	Email       string `db:"email" json:"email"`
+	Password    string `db:"password" json:"password"`
+}
+
+func (q *Queries) CreateWorkspaceUserPostgresql(ctx context.Context, arg CreateWorkspaceUserPostgresqlParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createWorkspaceUserPostgresql,
+		arg.WorkspaceID,
+		arg.Name,
+		arg.Email,
+		arg.Password,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const findUserByEmailPostgresql = `-- name: FindUserByEmailPostgresql :one
@@ -74,18 +100,24 @@ func (q *Queries) FindUserByIDMPostgresql(ctx context.Context, id int64) (User, 
 }
 
 const getUsersPostgresql = `-- name: GetUsersPostgresql :many
-SELECT id, name, email, mobile, created_at
+SELECT users.id, users.name, users.email, users.mobile, users.created_at,
+       user_roles.role_id, roles.name AS role_name
 FROM users
-WHERE workspace_id = $1
-ORDER BY created_at DESC, id DESC
+LEFT JOIN user_roles ON user_roles.user_id = users.id AND user_roles.workspace_id = $1
+LEFT JOIN roles ON roles.id = user_roles.role_id AND roles.workspace_id = $1
+WHERE users.id = (SELECT owner_id FROM workspaces WHERE id = $1)
+   OR EXISTS (SELECT 1 FROM user_roles WHERE user_roles.workspace_id = $1 AND user_roles.user_id = users.id)
+ORDER BY users.created_at DESC, users.id DESC
 `
 
 type GetUsersPostgresqlRow struct {
-	ID        int64      `db:"id" json:"id"`
-	Name      string     `db:"name" json:"name"`
-	Email     string     `db:"email" json:"email"`
-	Mobile    *string    `db:"mobile" json:"mobile"`
-	CreatedAt *time.Time `db:"created_at" json:"created_at"`
+	ID        int64         `db:"id" json:"id"`
+	Name      string        `db:"name" json:"name"`
+	Email     string        `db:"email" json:"email"`
+	Mobile    *string       `db:"mobile" json:"mobile"`
+	CreatedAt *time.Time    `db:"created_at" json:"created_at"`
+	RoleID    sql.NullInt64 `db:"role_id" json:"role_id"`
+	RoleName  *string       `db:"role_name" json:"role_name"`
 }
 
 func (q *Queries) GetUsersPostgresql(ctx context.Context, workspaceID int64) ([]GetUsersPostgresqlRow, error) {
@@ -103,7 +135,48 @@ func (q *Queries) GetUsersPostgresql(ctx context.Context, workspaceID int64) ([]
 			&i.Email,
 			&i.Mobile,
 			&i.CreatedAt,
+			&i.RoleID,
+			&i.RoleName,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWorkspaceRolesPostgresql = `-- name: GetWorkspaceRolesPostgresql :many
+SELECT r.id, r.name, COALESCE(string_agg(p.name, ',' ORDER BY p.name), '') AS permissions
+FROM roles r
+LEFT JOIN role_permissions rp ON rp.role_id = r.id AND rp.workspace_id = r.workspace_id
+LEFT JOIN permissions p ON p.id = rp.permission_id AND p.workspace_id = r.workspace_id
+WHERE r.workspace_id = $1
+GROUP BY r.id, r.name
+ORDER BY r.name
+`
+
+type GetWorkspaceRolesPostgresqlRow struct {
+	ID          int64       `db:"id" json:"id"`
+	Name        string      `db:"name" json:"name"`
+	Permissions interface{} `db:"permissions" json:"permissions"`
+}
+
+func (q *Queries) GetWorkspaceRolesPostgresql(ctx context.Context, workspaceID int64) ([]GetWorkspaceRolesPostgresqlRow, error) {
+	rows, err := q.db.QueryContext(ctx, getWorkspaceRolesPostgresql, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetWorkspaceRolesPostgresqlRow
+	for rows.Next() {
+		var i GetWorkspaceRolesPostgresqlRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Permissions); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

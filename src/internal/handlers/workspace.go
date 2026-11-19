@@ -33,7 +33,7 @@ func (w WorkspaceHandler) Index(c *gin.Context) {
 		Bucket:      10,
 	}
 
-	defaultContent := workspaces.Index(_workspaces, page)
+	defaultContent := workspaces.Index(_workspaces, page, userID)
 	var items []layout.MenuItem
 	base := layout.Layout(defaultContent, "", items)
 	err = base.Render(c.Request.Context(), c.Writer)
@@ -73,6 +73,10 @@ func (w WorkspaceHandler) Edit(c *gin.Context) {
 	// Fetch the workspace from the service
 	workspace, err := w.WorkspaceService.GetWorkspace(workspaceID)
 	sendError(err)
+	if err != nil || workspace.OwnerID != GetUserIDFromContext(c) {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 
 	// Render the workspace edit page
 	defaultContent := workspaces.Edit(workspace)
@@ -107,7 +111,15 @@ func (w WorkspaceHandler) Update(c *gin.Context) {
 
 	// Convert the workspace ID from string to int64
 	workspaceID, err := ConvertToInt64(workspaceIDParam)
-	sendError(err)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	workspace, err := w.WorkspaceService.GetWorkspace(workspaceID)
+	if err != nil || workspace.OwnerID != GetUserIDFromContext(c) {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 
 	err = w.WorkspaceService.UpdateWorkspace(workspaceID, body.Name)
 	sendError(err)
@@ -154,6 +166,11 @@ func (w WorkspaceHandler) SetDefault(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/dashboard/workspaces")
 		return
 	}
+	workspace, err := w.WorkspaceService.GetWorkspace(workspaceID)
+	if err != nil || workspace.OwnerID != ownerID {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 
 	err = w.WorkspaceService.SetDefaultWorkspace(workspaceID, ownerID)
 	if err != nil {
@@ -171,6 +188,15 @@ func (w WorkspaceHandler) Delete(c *gin.Context) {
 	}
 
 	workspaceID, err := ConvertToInt64(workspaceIDParam)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	workspace, err := w.WorkspaceService.GetWorkspace(workspaceID)
+	if err != nil || workspace.OwnerID != GetUserIDFromContext(c) {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 	err = w.WorkspaceService.DeleteWorkspace(workspaceID)
 	if err != nil {
 		c = ContextWithError(c, err.Error())

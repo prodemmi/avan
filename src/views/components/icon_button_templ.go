@@ -39,7 +39,7 @@ func IconButton(id string, children templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" style=\"width: 64px;\" class=\"flex justify-center items-center P-0 cursor-pointer bg-blue-500 hover:bg-blue-700 text-white rounded-full\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" type=\"button\" class=\"flex justify-center items-center cursor-pointer rounded-full\" aria-label=\"Filter messages\" aria-expanded=\"false\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

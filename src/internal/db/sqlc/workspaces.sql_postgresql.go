@@ -69,7 +69,11 @@ func (q *Queries) FindWorkspaceByNamePostgresql(ctx context.Context, name string
 }
 
 const getDefaultWorkspacePostgresql = `-- name: GetDefaultWorkspacePostgresql :one
-SELECT id, owner_id, name, is_default, created_at, updated_at FROM workspaces WHERE is_default = true AND owner_id = $1 LIMIT 1
+SELECT id, owner_id, name, is_default, created_at, updated_at FROM workspaces
+WHERE (owner_id = $1 AND is_default = true)
+   OR id = (SELECT workspace_id FROM user_roles WHERE user_id = $1 ORDER BY created_at LIMIT 1)
+ORDER BY is_default DESC
+LIMIT 1
 `
 
 func (q *Queries) GetDefaultWorkspacePostgresql(ctx context.Context, ownerID int64) (Workspace, error) {
@@ -113,10 +117,44 @@ func (q *Queries) GetWorkspaceByTokenPostgresql(ctx context.Context, apiKey stri
 	return i, err
 }
 
+const listAllWorkspacesPostgresql = `-- name: ListAllWorkspacesPostgresql :many
+SELECT id, owner_id, name, is_default, created_at, updated_at FROM workspaces ORDER BY created_at DESC
+`
+
+func (q *Queries) ListAllWorkspacesPostgresql(ctx context.Context) ([]Workspace, error) {
+	rows, err := q.db.QueryContext(ctx, listAllWorkspacesPostgresql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Workspace
+	for rows.Next() {
+		var i Workspace
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.Name,
+			&i.IsDefault,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWorkspacesPostgresql = `-- name: ListWorkspacesPostgresql :many
 SELECT id, owner_id, name, is_default, created_at, updated_at
 FROM workspaces
-WHERE owner_id = $1
+WHERE owner_id = $1 OR id IN (SELECT workspace_id FROM user_roles WHERE user_id = $1)
 ORDER BY created_at DESC
 `
 

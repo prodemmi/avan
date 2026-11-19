@@ -1,6 +1,6 @@
 -- name: ListProvidersPostgresql :many
 SELECT * FROM providers
-WHERE workspace_id = $1 AND owner_id = $2
+WHERE workspace_id = $1
 ORDER BY created_at DESC;
 
 -- name: GetSmsConfigPostgresql :one
@@ -24,8 +24,8 @@ SELECT * FROM webhook_configs
 WHERE provider_id = $1;
 
 -- name: CreateSmsConfigPostgresql :exec
-INSERT INTO sms_configs (workspace_id, provider_id, owner_id, url, method, auth_token_key, auth_token_value, is_auth_in_header)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+INSERT INTO sms_configs (workspace_id, provider_id, owner_id, url, method, auth_token_key, auth_token_value, is_auth_in_header, body_schema)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 
 -- name: CreateEmailConfigPostgresql :exec
 INSERT INTO email_configs (workspace_id, provider_id, owner_id, smtp_host, smtp_port, username, password, from_email)
@@ -53,18 +53,19 @@ UPDATE sms_configs
 SET url = $2,
     method = $3,
     auth_token_key = $4,
-    auth_token_value = $5,
-    is_auth_in_header  = $6
+    auth_token_value = COALESCE(NULLIF($5, ''), auth_token_value),
+    is_auth_in_header  = $6,
+    body_schema = $7
 WHERE provider_id = $1;
 
 -- name: UpdateEmailConfigPostgresql :exec
 UPDATE email_configs
-SET smtp_host = $1, smtp_port = $2, username = $3, password = $4, from_email = $5
+SET smtp_host = $1, smtp_port = $2, username = $3, password = COALESCE(NULLIF($4, ''), password), from_email = $5
 WHERE provider_id = $6;
 
 -- name: UpdateTelegramConfigPostgresql :exec
 UPDATE telegram_configs
-SET bot_token = $1
+SET bot_token = COALESCE(NULLIF($1, ''), bot_token)
 WHERE provider_id = $2;
 
 -- name: UpdateSlackConfigPostgresql :exec

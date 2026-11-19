@@ -1,14 +1,18 @@
 package api_keys
 
-import "avan/views/components"
+import (
+	"avan/views/components"
+	"fmt"
+)
 
-templ Create() {
+templ Create(workspaceID int64) {
 	<div class="flex justify-between">
 		<b>Create Api Key</b>
 		<div></div>
 	</div>
 	<div class="w-full">
 		<form class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 dark:bg-gray-900" action="/dashboard/api-keys" method="POST">
+			<input type="hidden" name="workspace-id" value={ fmt.Sprint(workspaceID) } />
 			<div class="mb-4">
 				<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-100" for="name">
 					Name

@@ -9,11 +9,8 @@ type ProviderRepository struct {
 	Base Repository
 }
 
-func (w ProviderRepository) ListProviders(ctx context.Context, workspaceID int64, ownerID int64) ([]sqlc.Provider, error) {
-	return w.Base.DB.Queries.ListProvidersPostgresql(ctx, sqlc.ListProvidersPostgresqlParams{
-		WorkspaceID: workspaceID,
-		OwnerID:     ownerID,
-	})
+func (w ProviderRepository) ListProviders(ctx context.Context, workspaceID int64) ([]sqlc.Provider, error) {
+	return w.Base.DB.Queries.ListProvidersPostgresql(ctx, workspaceID)
 }
 
 func (w ProviderRepository) GetProvider(ctx context.Context, providerID int64) (sqlc.Provider, error) {
@@ -51,14 +48,15 @@ func (w ProviderRepository) GetWebhookConfig(ctx context.Context, providerID int
 	return w.Base.DB.Queries.GetWebhookConfigPostgresql(ctx, providerID)
 }
 
-func (w ProviderRepository) UpdateSmsConfig(ctx context.Context, providerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool) error {
+func (w ProviderRepository) UpdateSmsConfig(ctx context.Context, providerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string) error {
 	return w.Base.DB.Queries.UpdateSmsConfigPostgresql(ctx, sqlc.UpdateSmsConfigPostgresqlParams{
 		ProviderID:     providerID,
 		Url:            url,
 		Method:         int64(method),
 		AuthTokenKey:   authTokenKey,
-		AuthTokenValue: authTokenValue,
+		Column5:        authTokenValue,
 		IsAuthInHeader: isAuthInHeader,
+		BodySchema:     bodySchema,
 	})
 }
 
@@ -75,7 +73,7 @@ func (w ProviderRepository) UpdateEmailConfig(ctx context.Context, providerID in
 		SmtpHost:   smtpHost,
 		SmtpPort:   smtpPort,
 		Username:   username,
-		Password:   password,
+		Column4:    password,
 		FromEmail:  fromEmail,
 	})
 }
@@ -83,7 +81,7 @@ func (w ProviderRepository) UpdateEmailConfig(ctx context.Context, providerID in
 func (w ProviderRepository) UpdateTelegramConfig(ctx context.Context, providerID int64, botToken string) error {
 	return w.Base.DB.Queries.UpdateTelegramConfigPostgresql(ctx, sqlc.UpdateTelegramConfigPostgresqlParams{
 		ProviderID: providerID,
-		BotToken:   botToken,
+		Column1:    botToken,
 	})
 }
 
@@ -101,7 +99,7 @@ func (w ProviderRepository) UpdateWebhookConfig(ctx context.Context, providerID 
 	})
 }
 
-func (w ProviderRepository) CreateSmsConfig(ctx context.Context, workspaceID int64, providerID int64, ownerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool) error {
+func (w ProviderRepository) CreateSmsConfig(ctx context.Context, workspaceID int64, providerID int64, ownerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string) error {
 	return w.Base.DB.Queries.CreateSmsConfigPostgresql(ctx, sqlc.CreateSmsConfigPostgresqlParams{
 		WorkspaceID:    workspaceID,
 		ProviderID:     providerID,
@@ -111,6 +109,7 @@ func (w ProviderRepository) CreateSmsConfig(ctx context.Context, workspaceID int
 		AuthTokenKey:   authTokenKey,
 		AuthTokenValue: authTokenValue,
 		IsAuthInHeader: isAuthInHeader,
+		BodySchema:     bodySchema,
 	})
 }
 

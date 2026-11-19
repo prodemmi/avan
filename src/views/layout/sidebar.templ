@@ -14,14 +14,19 @@ templ SidebarItem(title string, url string, icon string) {
 	</a>
 }
 
+templ WorkspaceSwitcher(workspaces []sqlc.Workspace, selected sqlc.Workspace) {
+	<form class="workspace-switcher" action="/dashboard/switch-workspace" method="GET">
+		<label class="sr-only" for="active-workspace">Workspace</label>
+		<select id="active-workspace" name="workspace-id" aria-label="Workspace" onchange="this.form.requestSubmit()">
+			for _, workspace := range workspaces {
+				<option value={ fmt.Sprint(workspace.ID) } selected?={ workspace.ID == selected.ID }>{ workspace.Name }</option>
+			}
+		</select>
+	</form>
+}
+
 templ Sidebar() {
-	{{ theme := ctx.Value("theme").(string)}}
-	{{ primaryColor := ctx.Value("primaryColor").(string)}}
-	{{
-		if theme == "dark" {
-			primaryColor = "var(--color-gray-800)"
-		}
-	}}
+	{{ primaryColor := safePrimaryColor(ctx.Value("primaryColor").(string))}}
 
 	<aside class="admin-sidebar text-white dark:text-gray-300" style={ fmt.Sprintf("background-color: %s", primaryColor) }>
 		<a href="/dashboard/" class="admin-brand" aria-label="Avan home">
@@ -46,6 +51,7 @@ templ Sidebar() {
 				@SidebarItem("API Keys", "/dashboard/api-keys", "ri-key-2-line")
 				@SidebarItem("Workspaces", "/dashboard/workspaces", "ri-building-2-line")
 				@SidebarItem("Settings", "/dashboard/settings", "ri-settings-3-line")
+				@SidebarItem("Developer", "/dashboard/developer/", "ri-code-s-slash-line")
 			</nav>
 		</div>
 		<a class="admin-logout" href="/auth/logout"><i class="ri-logout-box-r-line" aria-hidden="true"></i><span>Logout</span></a>

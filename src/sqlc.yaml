@@ -1,6 +1,9 @@
 version: "2"
 sql:
-  - schema: "internal/db/migrations/postgresql/001_initialize_schema.sql"
+  - schema:
+      - "internal/db/migrations/postgresql/001_initialize_schema.sql"
+      - "internal/db/migrations/postgresql/002_admin_and_sms_body_schema.sql"
+      - "internal/db/migrations/postgresql/003_message_retry.sql"
     queries: "internal/db/queries/postgresql/"
     engine: "postgresql"
     gen:
@@ -46,6 +49,10 @@ sql:
               type: "int64"
               pointer: true
           - column: "messages.error"
+            go_type:
+              type: "string"
+              pointer: true
+          - column: "sms_configs.body_schema"
             go_type:
               type: "string"
               pointer: true

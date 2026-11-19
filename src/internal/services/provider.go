@@ -21,9 +21,9 @@ type ProviderService struct {
 
 func (w ProviderService) GetProviders(workspaceID int64, ownerID int64) ([]sqlc.Provider, error) {
 	ctx := context.Background()
-	key := w.ProviderCache.GetKey("providers", workspaceID, ownerID)
+	key := w.ProviderCache.GetKey("providers", workspaceID)
 	return w.ProviderCache.GetOrSetArray(key, time.Hour*24, func() ([]sqlc.Provider, error) {
-		return w.Repo.ListProviders(ctx, workspaceID, ownerID)
+		return w.Repo.ListProviders(ctx, workspaceID)
 	})
 }
 
@@ -37,11 +37,16 @@ func (w ProviderService) GetProvider(providerID int64) (sqlc.Provider, error) {
 
 func (w ProviderService) UpdateProvider(providerID int64, name string) error {
 	ctx := context.Background()
-	err := w.Repo.UpdateProvider(ctx, providerID, name)
+	provider, err := w.GetProvider(providerID)
+	if err != nil {
+		return err
+	}
+	err = w.Repo.UpdateProvider(ctx, providerID, name)
 
 	if err == nil {
 		key := w.ProviderCache.GetStringKey("provider", providerID)
 		w.ProviderCache.Delete(key...)
+		w.invalidateProviders(provider.WorkspaceID)
 	}
 
 	return err
@@ -92,9 +97,9 @@ func (w ProviderService) GetWebhookConfig(providerID int64) (sqlc.WebhookConfig,
 	})
 }
 
-func (w ProviderService) UpdateSmsConfig(id int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool) error {
+func (w ProviderService) UpdateSmsConfig(id int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string) error {
 	ctx := context.Background()
-	err := w.Repo.UpdateSmsConfig(ctx, id, url, method, authTokenKey, authTokenValue, isAuthInHeader)
+	err := w.Repo.UpdateSmsConfig(ctx, id, url, method, authTokenKey, authTokenValue, isAuthInHeader, bodySchema)
 	if err == nil {
 		key := w.SmsConfigCache.GetStringKey("sms-config", id)
 		w.SmsConfigCache.Delete(key...)
@@ -142,9 +147,9 @@ func (w ProviderService) UpdateWebhookConfig(id int64, url string) error {
 	return err
 }
 
-func (w ProviderService) CreateSmsConfig(workspaceID int64, providerID int64, ownerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool) error {
+func (w ProviderService) CreateSmsConfig(workspaceID int64, providerID int64, ownerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string) error {
 	ctx := context.Background()
-	return w.Repo.CreateSmsConfig(ctx, workspaceID, providerID, ownerID, url, method, authTokenKey, authTokenValue, isAuthInHeader)
+	return w.Repo.CreateSmsConfig(ctx, workspaceID, providerID, ownerID, url, method, authTokenKey, authTokenValue, isAuthInHeader, bodySchema)
 }
 
 func (w ProviderService) CreateEmailConfig(workspaceID int64, providerID int64, ownerID int64, smtpHost string, smtpPort int64, fromEmail string, username *string, password *string) error {
@@ -169,17 +174,31 @@ func (w ProviderService) CreateWebhookConfig(workspaceID int64, providerID int64
 
 func (w ProviderService) CreateProvider(workspaceID int64, ownerID int64, configType int32, name string) (sqlc.Provider, error) {
 	ctx := context.Background()
-	return w.Repo.CreateProvider(ctx, workspaceID, ownerID, configType, name)
+	provider, err := w.Repo.CreateProvider(ctx, workspaceID, ownerID, configType, name)
+	if err == nil {
+		w.invalidateProviders(workspaceID)
+	}
+	return provider, err
 }
 
 func (w ProviderService) DeleteProvider(id int64) error {
 	ctx := context.Background()
-	err := w.Repo.DeleteProvider(ctx, id)
+	provider, err := w.GetProvider(id)
+	if err != nil {
+		return err
+	}
+	err = w.Repo.DeleteProvider(ctx, id)
 	if err == nil {
 		key := w.ProviderCache.GetStringKey("provider", id)
 		w.ProviderCache.Delete(key...)
+		w.invalidateProviders(provider.WorkspaceID)
 	}
 	return err
+}
+
+func (w ProviderService) invalidateProviders(workspaceID int64) {
+	key := w.ProviderCache.GetStringKey("providers", workspaceID)
+	_ = w.ProviderCache.Delete(key...)
 }
 
 func (w ProviderService) DeleteSmsConfig(id int64) error {
@@ -236,7 +255,7 @@ func (w ProviderService) CreateDefaultProviders() {
 		provider, _ := w.CreateProvider(1, 1, typeInt, providerSettings.Name)
 		switch providerSettings.Type {
 		case "sms":
-			w.CreateSmsConfig(1, provider.ID, 1, providerSettings.Url, methodInt, &providerSettings.AuthTokenKey, &providerSettings.AuthTokenValue, &providerSettings.IsAuthInHeader)
+			w.CreateSmsConfig(1, provider.ID, 1, providerSettings.Url, methodInt, &providerSettings.AuthTokenKey, &providerSettings.AuthTokenValue, &providerSettings.IsAuthInHeader, nil)
 			break
 		case "email":
 			w.CreateEmailConfig(1, provider.ID, 1, providerSettings.SmtpHost, int64(providerSettings.SmtpPort), providerSettings.FromEmail, &providerSettings.Username, &providerSettings.Password)

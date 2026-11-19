@@ -1,9 +1,12 @@
 package router
 
-import "github.com/gin-gonic/gin"
+import (
+	"avan/internal/middlewares"
+	"github.com/gin-gonic/gin"
+)
 
 func (r Router) GenerateTemplateRoutes(routerGroup *gin.RouterGroup) {
-	workspaces := routerGroup.Group("/templates")
+	workspaces := routerGroup.Group("/templates", middlewares.PermissionMiddleware(r.UserHandler.UserService, "templates.manage"))
 	{
 		workspaces.GET("/", r.TemplateHandler.Index)
 		workspaces.GET("/create", r.TemplateHandler.Create)

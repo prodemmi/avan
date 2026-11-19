@@ -8,22 +8,22 @@ import (
 	"time"
 )
 
-templ Index(apiKeyList []sqlc.ApiKey, page components.PageData) {
+templ Index(apiKeyList []sqlc.ApiKey, page components.PageData, workspaceID int64) {
 	<div class="flex justify-between">
 		<b>Api Keys</b>
 		if len(apiKeyList) > 0 {
-			@components.Button("Create", "/dashboard/api-keys/create")
+			@components.Button("Create", fmt.Sprintf("/dashboard/api-keys/create?workspace-id=%d", workspaceID))
 		} else {
 			<div></div>
 		}
 	</div>
 	if len(apiKeyList) == 0 || apiKeyList == nil {
-		{{ btn := components.Button("Create", "/dashboard/api-keys/create") }}
+		{{ btn := components.Button("Create", fmt.Sprintf("/dashboard/api-keys/create?workspace-id=%d", workspaceID)) }}
 		@components.EmptyState("No API Key has created", "Get started by creating a new API Key.", btn)
 	} else {
 		{{ apiKey := table.ToTableMapList(apiKeyList) }}
 		{{deleteAction := func(row map[string]any) (string, string, string) {
-	return "Delete", fmt.Sprintf("/dashboard/api-keys/%d/delete", row["ID"]), "POST"
+	return "Delete", fmt.Sprintf("/dashboard/api-keys/%d/delete?workspace-id=%d", row["ID"], workspaceID), "POST"
 }
 		}}
 		{{ actions := []components.TableAction{deleteAction} }}

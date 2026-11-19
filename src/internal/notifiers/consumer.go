@@ -38,6 +38,9 @@ func (n Notifier) Start() {
 
 	claimCursor := "0-0"
 	for {
+		if err := n.MessageService.EnqueueDueScheduledMessages(ctx); err != nil {
+			n.Logger.Error("failed to enqueue scheduled messages", zap.Error(err))
+		}
 		messages, next, err := client.XAutoClaim(ctx, &goredis.XAutoClaimArgs{
 			Stream:   stream,
 			Group:    group,
@@ -97,13 +100,15 @@ func (n Notifier) consumeMessage(ctx context.Context, client *goredis.Client, st
 
 	provider, err := n.ProviderService.GetProvider(message.ProviderID)
 	if err == nil {
-		err = n.SendMessage(provider, message)
+		err = SendWithRetry(func() error { return n.SendMessage(provider, message) }, message.Retry)
 	}
 	if err != nil {
 		n.Logger.Error("failed to send queued message", zap.Int64("message_id", message.ID), zap.Error(err))
 		if markErr := n.MessageService.MarkMessageAsError(message.ID); markErr != nil {
 			n.Logger.Error("failed to mark message as error", zap.Int64("message_id", message.ID), zap.Error(markErr))
+			return
 		}
+		n.ackMessage(ctx, client, stream, group, queued.ID)
 		return
 	}
 	if err := n.MessageService.MarkMessageAsSuccess(message.ID); err != nil {

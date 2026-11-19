@@ -1,6 +1,15 @@
 package views
 
-templ Home() {
+import "fmt"
+
+type HomeStatus struct {
+	Nodes int
+	Healthy int
+	Unhealthy int
+	Consumers int
+}
+
+templ Home(status HomeStatus) {
 	<div class="dashboard-home">
 		<section class="dashboard-hero">
 			<div class="dashboard-hero-copy">
@@ -21,6 +30,18 @@ templ Home() {
 				@QuickActionCard("ri-file-list-3-line", "Create templates", "Prepare reusable message templates.", "/dashboard/templates")
 				@QuickActionCard("ri-key-2-line", "API keys", "Create credentials for your integrations.", "/dashboard/api-keys")
 				@QuickActionCard("ri-settings-3-line", "Settings", "Manage preferences for your application.", "/dashboard/settings")
+				@QuickActionCard("ri-code-s-slash-line", "Developer", "API guide, API keys, and interactive Swagger.", "/dashboard/developer")
+			</div>
+		</section>
+		<section class="dashboard-section">
+			<div class="dashboard-section-heading">
+				<div><span class="dashboard-kicker">LIVE OVERVIEW</span><h2>System Status &amp; Service Health</h2></div>
+				<a class="dashboard-health-link" href="/dashboard/analysis">View detailed health</a>
+			</div>
+			<div class="dashboard-health-grid">
+				<div class="dashboard-health-card"><strong>Database (PostgreSQL)</strong><span><i class="ri-checkbox-circle-fill" aria-hidden="true"></i> Connected</span></div>
+				<div class="dashboard-health-card"><strong>Redis queue</strong><span><i class="ri-checkbox-circle-fill" aria-hidden="true"></i> Connected · { fmt.Sprint(status.Consumers) } consumers configured</span></div>
+				<div class="dashboard-health-card"><strong>Cluster nodes</strong><span>{ fmt.Sprintf("%d healthy · %d unhealthy of %d", status.Healthy, status.Unhealthy, status.Nodes) }</span></div>
 			</div>
 		</section>
 	</div>

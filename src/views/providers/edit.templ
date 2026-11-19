@@ -5,34 +5,43 @@ import (
 	"avan/views/components"
 	"avan/views/providers/edit_config_forms"
 	"fmt"
+	"strings"
 )
 
 templ Edit(provider sqlc.Provider, configType string, config interface{}) {
-	<div class="flex justify-between">
-		<b>Edit Provider "{ provider.Name }"</b>
-		<div></div>
+	<div class="provider-form-page">
+		<a class="provider-back-link" href="/dashboard/providers/">← Back to providers</a>
+		<div class="provider-form-heading">
+			<span class="provider-form-icon"><i class="ri-settings-3-line" aria-hidden="true"></i></span>
+			<div><span class="admin-eyebrow">PROVIDER SETTINGS</span><h1>Edit provider</h1><p>Update the connection details for <strong>{ provider.Name }</strong>.</p></div>
+		</div>
+		<form class="provider-config-form" action={ templ.URL(fmt.Sprintf("/dashboard/providers/%d/edit", provider.ID)) } method="POST">
+			<section class="provider-form-card">
+				<div class="provider-form-section-heading"><span class="provider-form-step"><i class="ri-edit-line" aria-hidden="true"></i></span><div><h2>Provider details</h2><p>Update the display name for this connection.</p></div></div>
+				<div class="provider-fields">
+					<div class="provider-field"><label for="name">Provider name</label>@components.Input("name", "Enter provider name", provider.Name)</div>
+					<div class="provider-field provider-channel-summary"><span>Channel</span><strong>{ strings.ToUpper(configType) }</strong></div>
+				</div>
+			</section>
+			<section class="provider-form-card">
+				<div class="provider-form-section-heading"><span class="provider-form-step">2</span><div><h2>Connection settings</h2><p>Credentials are stored with this workspace provider.</p></div></div>
+				switch configType {
+					case "sms":
+						@edit_config_forms.SmsForm(config.(sqlc.SmsConfig))
+					case "email":
+						@edit_config_forms.EmailForm(config.(sqlc.EmailConfig))
+					case "telegram":
+						@edit_config_forms.TelegramForm(config.(sqlc.TelegramConfig))
+					case "slack":
+						@edit_config_forms.SlackForm(config.(sqlc.SlackConfig))
+					case "webhook":
+						@edit_config_forms.WebhookForm(config.(sqlc.WebhookConfig))
+				}
+			</section>
+			<div class="provider-form-actions">
+				<a class="provider-cancel-button" href="/dashboard/providers/">Cancel</a>
+				<button class="provider-save-button" type="submit"><i class="ri-check-line" aria-hidden="true"></i>Save changes</button>
+			</div>
+		</form>
 	</div>
-	<form class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 dark:bg-gray-800" action={ templ.URL(fmt.Sprintf("/dashboard/providers/%d/edit", provider.ID)) } method="POST">
-		<div class="mb-4">
-			<label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="name">
-				Provider name
-			</label>
-			@components.Input("name", "Enter provider name", provider.Name)
-		</div>
-		switch configType {
-			case "sms":
-				@edit_config_forms.SmsForm(config.(sqlc.SmsConfig))
-			case "email":
-				@edit_config_forms.EmailForm(config.(sqlc.EmailConfig))
-			case "telegram":
-				@edit_config_forms.TelegramForm(config.(sqlc.TelegramConfig))
-			case "slack":
-				@edit_config_forms.SlackForm(config.(sqlc.SlackConfig))
-			case "webhook":
-				@edit_config_forms.WebhookForm(config.(sqlc.WebhookConfig))
-		}
-		<div class="mt-4" style="width: 20dvw">
-			@components.SubmitButton(fmt.Sprintf("Update %s config", configType))
-		</div>
-	</form>
 }

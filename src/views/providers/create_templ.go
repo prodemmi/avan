@@ -32,35 +32,20 @@ func Create(configType string) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex justify-between\"><b>Create Provider</b><div></div></div><form class=\"bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 dark:bg-gray-800\" action=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"provider-form-page\"><a class=\"provider-back-link\" href=\"/dashboard/providers/\">← Back to providers</a><div class=\"provider-form-heading\"><span class=\"provider-form-icon\"><i class=\"ri-plug-2-line\" aria-hidden=\"true\"></i></span><div><span class=\"admin-eyebrow\">NEW INTEGRATION</span><h1>Create provider</h1><p>Connect a service to deliver messages from this workspace.</p></div></div><form class=\"provider-config-form\" action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.URL(fmt.Sprintf("/dashboard/providers/create/%s", configType))).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 14, Col: 156}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 16, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" method=\"POST\"><div class=\"mb-4\"><label class=\"block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300\" for=\"type\">Provider Type</label>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		options := []components.SelectOption{
-			{Value: "sms", Label: "Sms"},
-			{Value: "email", Label: "Email"},
-			{Value: "telegram", Label: "Telegram"},
-			{Value: "slack", Label: "Slack"},
-			{Value: "webhook", Label: "Webhook"},
-		}
-		templ_7745c5c3_Err = components.Select("type", options, configType).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div class=\"mb-4\"><label class=\"block text-gray-700 text-sm font-bold mb-2\" for=\"name\">Provider name</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" method=\"POST\"><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">1</span><div><h2>Provider details</h2><p>Give this connection a recognizable name and choose its channel.</p></div></div><div class=\"provider-fields\"><div class=\"provider-field\"><label for=\"name\">Provider name</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -68,7 +53,16 @@ func Create(configType string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p>Use a short name your team will recognize.</p></div><div class=\"provider-field\"><label for=\"type\">Channel</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		options := []components.SelectOption{{Value: "sms", Label: "Sms"}, {Value: "email", Label: "Email"}, {Value: "telegram", Label: "Telegram"}, {Value: "slack", Label: "Slack"}, {Value: "webhook", Label: "Webhook"}}
+		templ_7745c5c3_Err = components.Select("type", options, configType).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div></section><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">2</span><div><h2>Connection settings</h2><p>Enter the credentials and endpoint for this provider.</p></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -99,7 +93,7 @@ func Create(configType string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</form><script>\n        const typeValue = document.querySelector(\"[name=type]\");\n        if (typeValue) {\n            typeValue.onchange = (e) => {\n                location.href = \"/dashboard/providers/create/\" + e.target.value\n            }\n        }\n    </script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</section><div class=\"provider-form-actions\"><a class=\"provider-cancel-button\" href=\"/dashboard/providers/\">Cancel</a> <button class=\"provider-save-button\" type=\"submit\"><i class=\"ri-check-line\" aria-hidden=\"true\"></i>Create provider</button></div></form></div><script>\n        const typeValue = document.querySelector(\"[name=type]\");\n        typeValue?.addEventListener(\"change\", (event) => {\n            location.href = \"/dashboard/providers/create/\" + event.target.value;\n        });\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

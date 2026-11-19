@@ -12,19 +12,19 @@ func ApiKeyMiddleware(apiKeyService services.ApiKeyService, workspaceService ser
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("X-API-KEY")
 		if tokenString == "" {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing API key"})
 			return
 		}
 
 		apiKey, err := apiKeyService.ValidateApiKey(tokenString)
 		if err != nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired API key"})
 			return
 		}
 
 		workspace, err := workspaceService.GetWorkspace(apiKey.WorkspaceID)
 		if err != nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired API key"})
 			return
 		}
 

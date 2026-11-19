@@ -128,7 +128,7 @@ func Table(rows []map[string]any, headers []string, actions []TableAction, resol
 				}
 			}
 			if len(actions) > 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<td scope=\"row\" class=\"flex gap-2 px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<td scope=\"row\" class=\"table-actions flex gap-2 px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

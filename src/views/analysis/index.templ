@@ -43,9 +43,11 @@ templ Index(data AnalysisData) {
 							}
 						}}
 						@components.Select("range", timeRangeOptions, data.Range)
-						<div id="custom_range" class="hidden flex gap-4">
-							<label for="startDate">From <input name="start_date" type="date" id="startDate" value={ data.StartDate }/></label>
-							<label for="endDate">To <input name="end_date" type="date" id="endDate" value={ data.EndDate }/></label>
+						<div id="custom_range" class="hidden flex flex-wrap gap-4">
+							<label class="filter-field" for="startDate">From <input name="start_date" type="date" id="startDate" value={ data.StartDate }/></label>
+							<label class="filter-field hidden" for="startDatePersian">From (Persian calendar) <input type="text" inputmode="numeric" id="startDatePersian" data-date-for="startDate" placeholder="1405/08/28" /></label>
+							<label class="filter-field" for="endDate">To <input name="end_date" type="date" id="endDate" value={ data.EndDate }/></label>
+							<label class="filter-field hidden" for="endDatePersian">To (Persian calendar) <input type="text" inputmode="numeric" id="endDatePersian" data-date-for="endDate" placeholder="1405/08/28" /></label>
 						</div>
 					</div>
 					@components.SubmitButton("Filter")
@@ -213,6 +215,31 @@ templ Index(data AnalysisData) {
 		const updateDateRange = () => customRange.classList.toggle('hidden', timestampRangeSelect.value !== 'custom');
 		updateDateRange();
 		timestampRangeSelect.addEventListener('change', updateDateRange);
+
+		const toPersianDate = (value) => {
+			if (!value) return "";
+			const date = new Date(`${value}T12:00:00Z`);
+			const parts = new Intl.DateTimeFormat("en-US-u-ca-persian-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "UTC" }).formatToParts(date);
+			const get = (type) => parts.find((part) => part.type === type)?.value || "";
+			return `${get("year")}/${get("month")}/${get("day")}`;
+		};
+		const updateCalendarInputs = () => {
+			const persian = document.documentElement.lang === "fa";
+			document.querySelectorAll("[data-date-for]").forEach((persianInput) => {
+				const gregorianInput = document.getElementById(persianInput.dataset.dateFor);
+				const nativeLabel = gregorianInput.closest("label");
+				const persianLabel = persianInput.closest("label");
+				if (persian && !persianInput.value) persianInput.value = toPersianDate(gregorianInput.value);
+				nativeLabel.classList.toggle("hidden", persian);
+				persianLabel.classList.toggle("hidden", !persian);
+				gregorianInput.disabled = persian;
+				persianInput.disabled = !persian;
+				gregorianInput.name = persian ? "" : gregorianInput.id === "startDate" ? "start_date" : "end_date";
+				persianInput.name = persian ? (gregorianInput.id === "startDate" ? "start_date" : "end_date") : "";
+			});
+		};
+		updateCalendarInputs();
+		document.addEventListener("avan-language-changed", updateCalendarInputs);
 	});
 </script>
 }
