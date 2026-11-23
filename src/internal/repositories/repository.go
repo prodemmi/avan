@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+	"net"
+	"strings"
 )
 
 type Repository struct {
@@ -18,9 +20,17 @@ type Repository struct {
 }
 
 func (r Repository) GetServiceURL() string {
-	domain := r.Config.ServerDomain
-	port := r.Config.ServerPort
-	return fmt.Sprintf("http://%s:%d", domain, port)
+	domain := strings.TrimSuffix(r.Config.ServerDomain, "/")
+	if domain == "" {
+		domain = "localhost"
+	}
+	if strings.Contains(domain, "://") {
+		return domain
+	}
+	if _, _, err := net.SplitHostPort(domain); err == nil {
+		return "http://" + domain
+	}
+	return fmt.Sprintf("http://%s:%d", domain, r.Config.ServerPort)
 }
 
 func (r Repository) HashPassword(password string) string {

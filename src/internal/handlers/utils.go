@@ -9,6 +9,20 @@ import (
 	"strings"
 )
 
+// RequestIsHTTPS reports whether the client connected over HTTPS. When TLS is
+// terminated by a reverse proxy, Go only sees plain HTTP, so the proxy's
+// X-Forwarded-Proto header is used as well.
+func RequestIsHTTPS(c *gin.Context) bool {
+	if c.Request.TLS != nil {
+		return true
+	}
+	proto := c.GetHeader("X-Forwarded-Proto")
+	if i := strings.Index(proto, ","); i >= 0 {
+		proto = proto[:i]
+	}
+	return strings.EqualFold(strings.TrimSpace(proto), "https")
+}
+
 func GetUserIDFromContext(c *gin.Context) int64 {
 	return int64(c.MustGet("user_id").(float64))
 }

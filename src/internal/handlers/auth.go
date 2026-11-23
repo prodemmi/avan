@@ -3,7 +3,6 @@ package handlers
 import (
 	"avan/internal/services"
 	"avan/views/auth"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,8 +13,7 @@ type AuthHandler struct {
 }
 
 func (w AuthHandler) LoginPage(c *gin.Context) {
-	loginActionUrl := fmt.Sprintf("%s/auth/login", w.AuthService.Repo.Base.GetServiceURL())
-	base := auth.Login(loginActionUrl)
+	base := auth.Login("/auth/login")
 	err := base.Render(c.Request.Context(), c.Writer)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -47,18 +45,19 @@ func (w AuthHandler) Login(c *gin.Context) {
 		w.LoginPage(c)
 		return
 	}
-	domain := w.AuthService.Repo.Base.GetServiceURL()
-	c.SetCookie("auth_token", token, 3600, "/", domain, false, true) // for /auth path
+	secure := RequestIsHTTPS(c)
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("auth_token", token, 3600, "/", "", secure, true)
 
 	c.Redirect(http.StatusFound, "/dashboard")
 }
 
 func (w AuthHandler) Logout(c *gin.Context) {
-	domain := w.AuthService.Repo.Base.GetServiceURL()
-	c.SetCookie("auth_token", "", 3600, "/", domain, false, true)
+	secure := RequestIsHTTPS(c)
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("auth_token", "", 3600, "/", "", secure, true)
 
-	loginActionUrl := fmt.Sprintf("%s/auth/login", w.AuthService.Repo.Base.GetServiceURL())
-	c.Redirect(http.StatusFound, loginActionUrl)
+	c.Redirect(http.StatusFound, "/auth/login")
 }
 
 func NewAuthHandler(authService services.AuthService) AuthHandler {
