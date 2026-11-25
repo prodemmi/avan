@@ -73,7 +73,7 @@ func Index(providerList []sqlc.Provider, page components.PageData) templ.Compone
 				}
 				return row[header]
 			}
-			templ_7745c5c3_Err = components.Table(providers, []string{"ID", "Name", "ConfigType"}, actions, resolver, page).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Table(providers, []string{"ID", "Name", "ConfigType", "Priority", "Weight"}, actions, resolver, page).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

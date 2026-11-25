@@ -60,6 +60,20 @@ templ Index(settings []sqlc.Setting) {
 		{{ logDir := GetSettingValue(settings, "log-dir") }}
 		@components.ReadonlyInput("logs_directory", "Enter logs directory", logDir)
 	</div>
+	<!-- API Security -->
+	<div class="mb-6">
+		<h3 class="text-lg font-bold mb-2 text-gray-900 dark:text-gray-200">API Security Policy (JSON)</h3>
+		<p class="mb-2 text-sm text-gray-600 dark:text-gray-400">Use ip_allowlist and api_key_allowlist; empty lists preserve existing access.</p>
+		{{ apiSecurityPolicy := GetSettingValue(settings, "api-security-policy") }}
+		<form action="/dashboard/settings" method="POST">
+			<input type="hidden" name="key" value="api-security-policy"/>
+			<label class="sr-only" for="api-security-policy">API Security Policy JSON</label>
+			<textarea id="api-security-policy" name="value" rows="4" class="w-full rounded border p-2 font-mono text-sm">{ apiSecurityPolicy }</textarea>
+			<div class="mt-2">
+				@components.SubmitButton("Save API Security Policy")
+			</div>
+		</form>
+	</div>
 	<!-- Appearance Settings -->
 	<div class="mb-6">
 		<h3 class="text-lg font-bold mb-2 text-gray-900 dark:text-gray-200">Appearance Settings</h3>

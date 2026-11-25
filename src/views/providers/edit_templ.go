@@ -60,7 +60,7 @@ func Edit(provider sqlc.Provider, configType string, config interface{}) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" method=\"POST\"><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\"><i class=\"ri-edit-line\" aria-hidden=\"true\"></i></span><div><h2>Provider details</h2><p>Update the display name for this connection.</p></div></div><div class=\"provider-fields\"><div class=\"provider-field\"><label for=\"name\">Provider name</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" method=\"POST\"><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\"><i class=\"ri-edit-line\" aria-hidden=\"true\"></i></span><div><h2>Provider details</h2><p>Update the display name and failover order.</p></div></div><div class=\"provider-fields\"><div class=\"provider-field\"><label for=\"name\">Provider name</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -81,7 +81,23 @@ func Edit(provider sqlc.Provider, configType string, config interface{}) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</strong></div></div></section><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">2</span><div><h2>Connection settings</h2><p>Credentials are stored with this workspace provider.</p></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</strong></div><div class=\"provider-field\"><label for=\"priority\">Failover priority</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.NumberInput("priority", "0", &provider.Priority).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<p>Lower values are tried first after the selected provider fails.</p></div><div class=\"provider-field\"><label for=\"weight\">Failover weight</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.NumberInput("weight", "1", &provider.Weight).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p>Higher weight is more likely to be tried first among equal-priority backups.</p></div></div></section><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">2</span><div><h2>Connection settings</h2><p>Credentials are stored with this workspace provider.</p></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -112,7 +128,7 @@ func Edit(provider sqlc.Provider, configType string, config interface{}) templ.C
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</section><div class=\"provider-form-actions\"><a class=\"provider-cancel-button\" href=\"/dashboard/providers/\">Cancel</a> <button class=\"provider-save-button\" type=\"submit\"><i class=\"ri-check-line\" aria-hidden=\"true\"></i>Save changes</button></div></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</section><div class=\"provider-form-actions\"><a class=\"provider-cancel-button\" href=\"/dashboard/providers/\">Cancel</a> <button class=\"provider-save-button\" type=\"submit\"><i class=\"ri-check-line\" aria-hidden=\"true\"></i>Save changes</button></div></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

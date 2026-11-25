@@ -74,6 +74,7 @@ templ Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sq
 			<pre>{ `curl -X POST "https://your-avan-host/api/send" \
   -H "Content-Type: application/json" \
   -H "X-API-KEY: YOUR_API_KEY" \
+  -H "Idempotency-Key: unique-key-for-this-message" \
   -d '{"provider_id":` + fmt.Sprint(selectedProvider.ID) + `,"recipient":"+989120000000","message":"Hello","retry":true}'` }</pre>
 		</section>
 		<section>
@@ -88,9 +89,10 @@ templ Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sq
   "schedule_at": "2026-12-01T09:30:00Z",
   "payload": {"campaign":"welcome"}
 }`, selectedProvider.ID) }</pre>
-			<p class="mt-2 text-sm">Success <code>200</code></p>
-			<pre>{ `{"data":"message added to the queue"}` }</pre>
-			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Errors: <code>400</code> invalid JSON or provider/template outside the selected workspace; <code>401</code> missing, invalid, or expired API key; <code>500</code> database or queue failure. Error body: <code>{ `{"error":"description"}` }</code>.</p>
+			<p class="mt-2 text-sm">Send requests require an <code>Idempotency-Key</code> unique to that logical message. Reuse the same key only when retrying the same request; a different request with that key returns <code>409</code>.</p>
+			<p class="mt-2 text-sm">Accepted <code>202</code></p>
+			<pre>{ `{"data":{"message_id":123,"status":"pending","duplicate":false}}` }</pre>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Errors: <code>400</code> invalid JSON, provider/template outside the selected workspace, or missing idempotency key; <code>401</code> missing, invalid, or expired API key; <code>403</code> workspace security policy denied the request; <code>409</code> idempotency key reused for a different request; <code>500</code> database or queue failure. Error body: <code>{ `{"error":"description"}` }</code>.</p>
 		</section>
 		<section>
 			<h2 class="text-lg font-semibold">Template variables</h2>
@@ -103,7 +105,7 @@ templ Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sq
 		</section>
 		<section>
 			<h2 class="text-lg font-semibold">SMS POST body variables</h2>
-			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Configure the JSON body template on the SMS provider. Writable variables: <code>$send_to</code>, <code>$message</code>, <code>$payload</code>, <code>$retry</code>, <code>$schedule_at</code>, <code>$provider_id</code>, <code>$template_id</code>, and <code>$workspace_id</code>. <code>$payload</code> inserts a JSON object; <code>$retry</code> inserts a boolean.</p>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Configure the JSON-object body template and choose JSON or form-urlencoded encoding on the SMS provider. Writable variables: <code>$send_to</code>, <code>$message</code>, <code>$username</code>, <code>$sender</code>, <code>$payload</code>, <code>$retry</code>, <code>$schedule_at</code>, <code>$provider_id</code>, <code>$template_id</code>, and <code>$workspace_id</code>. Provider URLs may also use <code>$account_sid</code>. <code>$payload</code> inserts a JSON object; <code>$retry</code> inserts a boolean.</p>
 			<pre>{ `{
   "to": "$send_to",
   "message": "$message",
@@ -118,7 +120,11 @@ templ Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sq
 		<section>
 			<h2 class="text-lg font-semibold">Quick send</h2>
 			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300"><code>POST /api/quick-send</code> attempts delivery immediately. With <code>retry: true</code>, it makes up to three immediate attempts and queues the message for background retry if those fail. With <code>retry: false</code>, it makes one attempt and reports a provider failure. Future <code>schedule_at</code> values are scheduled instead of sent immediately.</p>
-			<p class="mt-2 text-sm">Success is <code>200</code> with <code>{ `{"data":"message sent quickly"}` }</code>, <code>{ `{"data":"message scheduled"}` }</code>, or <code>{ `{"data":"message added to the queue"}` }</code>. It uses the same request body and <code>400</code>, <code>401</code>, and <code>500</code> error format as <code>/api/send</code>.</p>
+			<p class="mt-2 text-sm">It uses the same required <code>Idempotency-Key</code> header as <code>/api/send</code>. Accepted <code>202</code> responses identify the pending/scheduled message; completed sends return <code>200</code>, while a recorded failed replay returns <code>502</code>.</p>
+		</section>
+		<section>
+			<h2 class="text-lg font-semibold">Message inquiry</h2>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300"><code>GET /api/messages/&#123;id&#125;</code> returns the latest status and timestamps for a message in the API key's workspace. Current statuses are <code>pending</code>, <code>scheduled</code>, <code>sent</code>, and <code>failed</code>. Delivery and read receipts are not available until a provider callback is configured.</p>
 		</section>
 		<section>
 			<h2 class="text-lg font-semibold">Interactive API reference</h2>
@@ -133,7 +139,9 @@ templ Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sq
 			url: document.getElementById("swagger-ui").dataset.specUrl,
 			dom_id: "#swagger-ui",
 			deepLinking: true,
-			persistAuthorization: false
+			persistAuthorization: false,
+			presets: [SwaggerUIBundle.presets.apis],
+			layout: "BaseLayout"
 		}));
 	</script>
 }

@@ -7,8 +7,82 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
+
+const createIdempotentMessagePostgresql = `-- name: CreateIdempotentMessagePostgresql :one
+INSERT INTO messages (workspace_id,
+                      provider_id,
+                      template_id,
+                      recipient,
+                      content,
+                      status,
+                      error,
+                      retry,
+                      schedule_at,
+                      sent_at,
+                      payload,
+                      idempotency_key,
+                      request_hash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+ON CONFLICT (workspace_id, idempotency_key) DO NOTHING
+RETURNING id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at, retry, idempotency_key, request_hash
+`
+
+type CreateIdempotentMessagePostgresqlParams struct {
+	WorkspaceID    int64          `db:"workspace_id" json:"workspace_id"`
+	ProviderID     int64          `db:"provider_id" json:"provider_id"`
+	TemplateID     *int64         `db:"template_id" json:"template_id"`
+	Recipient      string         `db:"recipient" json:"recipient"`
+	Content        string         `db:"content" json:"content"`
+	Status         int64          `db:"status" json:"status"`
+	Error          *string        `db:"error" json:"error"`
+	Retry          bool           `db:"retry" json:"retry"`
+	ScheduleAt     *time.Time     `db:"schedule_at" json:"schedule_at"`
+	SentAt         *time.Time     `db:"sent_at" json:"sent_at"`
+	Payload        *string        `db:"payload" json:"payload"`
+	IdempotencyKey sql.NullString `db:"idempotency_key" json:"idempotency_key"`
+	RequestHash    sql.NullString `db:"request_hash" json:"request_hash"`
+}
+
+func (q *Queries) CreateIdempotentMessagePostgresql(ctx context.Context, arg CreateIdempotentMessagePostgresqlParams) (Message, error) {
+	row := q.db.QueryRowContext(ctx, createIdempotentMessagePostgresql,
+		arg.WorkspaceID,
+		arg.ProviderID,
+		arg.TemplateID,
+		arg.Recipient,
+		arg.Content,
+		arg.Status,
+		arg.Error,
+		arg.Retry,
+		arg.ScheduleAt,
+		arg.SentAt,
+		arg.Payload,
+		arg.IdempotencyKey,
+		arg.RequestHash,
+	)
+	var i Message
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProviderID,
+		&i.TemplateID,
+		&i.Recipient,
+		&i.Content,
+		&i.Status,
+		&i.Error,
+		&i.Payload,
+		&i.ScheduleAt,
+		&i.SentAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Retry,
+		&i.IdempotencyKey,
+		&i.RequestHash,
+	)
+	return i, err
+}
 
 const createMessagePostgresql = `-- name: CreateMessagePostgresql :one
 INSERT INTO messages (workspace_id,
@@ -59,8 +133,43 @@ func (q *Queries) CreateMessagePostgresql(ctx context.Context, arg CreateMessage
 	return id, err
 }
 
+const getMessageByIdempotencyKeyPostgresql = `-- name: GetMessageByIdempotencyKeyPostgresql :one
+SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at, retry, idempotency_key, request_hash FROM messages
+WHERE workspace_id = $1 AND idempotency_key = $2
+LIMIT 1
+`
+
+type GetMessageByIdempotencyKeyPostgresqlParams struct {
+	WorkspaceID    int64          `db:"workspace_id" json:"workspace_id"`
+	IdempotencyKey sql.NullString `db:"idempotency_key" json:"idempotency_key"`
+}
+
+func (q *Queries) GetMessageByIdempotencyKeyPostgresql(ctx context.Context, arg GetMessageByIdempotencyKeyPostgresqlParams) (Message, error) {
+	row := q.db.QueryRowContext(ctx, getMessageByIdempotencyKeyPostgresql, arg.WorkspaceID, arg.IdempotencyKey)
+	var i Message
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProviderID,
+		&i.TemplateID,
+		&i.Recipient,
+		&i.Content,
+		&i.Status,
+		&i.Error,
+		&i.Payload,
+		&i.ScheduleAt,
+		&i.SentAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Retry,
+		&i.IdempotencyKey,
+		&i.RequestHash,
+	)
+	return i, err
+}
+
 const getMessagePostgresql = `-- name: GetMessagePostgresql :one
-SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at, retry FROM messages WHERE id = $1 LIMIT 1
+SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at, retry, idempotency_key, request_hash FROM messages WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetMessagePostgresql(ctx context.Context, id int64) (Message, error) {
@@ -81,12 +190,46 @@ func (q *Queries) GetMessagePostgresql(ctx context.Context, id int64) (Message, 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Retry,
+		&i.IdempotencyKey,
+		&i.RequestHash,
+	)
+	return i, err
+}
+
+const getMessageStatusForWorkspacePostgresql = `-- name: GetMessageStatusForWorkspacePostgresql :one
+SELECT id, status, schedule_at, sent_at, created_at FROM messages
+WHERE id = $1 AND workspace_id = $2
+LIMIT 1
+`
+
+type GetMessageStatusForWorkspacePostgresqlParams struct {
+	ID          int64 `db:"id" json:"id"`
+	WorkspaceID int64 `db:"workspace_id" json:"workspace_id"`
+}
+
+type GetMessageStatusForWorkspacePostgresqlRow struct {
+	ID         int64      `db:"id" json:"id"`
+	Status     int64      `db:"status" json:"status"`
+	ScheduleAt *time.Time `db:"schedule_at" json:"schedule_at"`
+	SentAt     *time.Time `db:"sent_at" json:"sent_at"`
+	CreatedAt  *time.Time `db:"created_at" json:"created_at"`
+}
+
+func (q *Queries) GetMessageStatusForWorkspacePostgresql(ctx context.Context, arg GetMessageStatusForWorkspacePostgresqlParams) (GetMessageStatusForWorkspacePostgresqlRow, error) {
+	row := q.db.QueryRowContext(ctx, getMessageStatusForWorkspacePostgresql, arg.ID, arg.WorkspaceID)
+	var i GetMessageStatusForWorkspacePostgresqlRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.ScheduleAt,
+		&i.SentAt,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const listMessagesPostgresql = `-- name: ListMessagesPostgresql :many
-SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at, retry
+SELECT id, workspace_id, provider_id, template_id, recipient, content, status, error, payload, schedule_at, sent_at, created_at, updated_at, retry, idempotency_key, request_hash
 FROM messages
 WHERE workspace_id = $1
   AND ($2 IS NULL OR template_id = $2)
@@ -137,6 +280,8 @@ func (q *Queries) ListMessagesPostgresql(ctx context.Context, arg ListMessagesPo
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Retry,
+			&i.IdempotencyKey,
+			&i.RequestHash,
 		); err != nil {
 			return nil, err
 		}

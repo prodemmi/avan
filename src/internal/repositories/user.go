@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"avan/internal/db/sqlc"
+	"avan/internal/model"
 	"context"
 	"database/sql"
 	"errors"
@@ -195,6 +196,17 @@ func (w UserRepository) SaveRole(ctx context.Context, workspaceID, roleID int64,
 	if roleID == 0 {
 		err = tx.QueryRowContext(ctx, `INSERT INTO roles (workspace_id, name) VALUES ($1, $2) RETURNING id`, workspaceID, name).Scan(&roleID)
 	} else {
+		var existingName string
+		err = tx.QueryRowContext(ctx, `SELECT name FROM roles WHERE id = $1 AND workspace_id = $2 FOR UPDATE`, roleID, workspaceID).Scan(&existingName)
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.New("role not found in this workspace")
+		}
+		if err != nil {
+			return err
+		}
+		if model.IsDefaultRoleName(existingName) {
+			return errors.New("default roles cannot be changed")
+		}
 		var existingID int64
 		err = tx.QueryRowContext(ctx, `UPDATE roles SET name = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND workspace_id = $2 RETURNING id`, roleID, workspaceID, name).Scan(&existingID)
 		roleID = existingID
@@ -217,6 +229,31 @@ func (w UserRepository) SaveRole(ctx context.Context, workspaceID, roleID int64,
 		if _, err = tx.ExecContext(ctx, `INSERT INTO role_permissions (workspace_id, role_id, permission_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, workspaceID, roleID, permissionID); err != nil {
 			return err
 		}
+	}
+	return tx.Commit()
+}
+
+func (w UserRepository) DeleteRole(ctx context.Context, workspaceID, roleID int64) error {
+	tx, err := w.Base.DB.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var name string
+	err = tx.QueryRowContext(ctx, `SELECT name FROM roles WHERE id = $1 AND workspace_id = $2 FOR UPDATE`, roleID, workspaceID).Scan(&name)
+	if errors.Is(err, sql.ErrNoRows) {
+		return errors.New("role not found in this workspace")
+	}
+	if err != nil {
+		return err
+	}
+	if model.IsDefaultRoleName(name) {
+		return errors.New("default roles cannot be deleted")
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM roles WHERE id = $1 AND workspace_id = $2`, roleID, workspaceID); err != nil {
+		return err
 	}
 	return tx.Commit()
 }

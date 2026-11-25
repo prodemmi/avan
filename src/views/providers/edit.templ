@@ -17,10 +17,12 @@ templ Edit(provider sqlc.Provider, configType string, config interface{}) {
 		</div>
 		<form class="provider-config-form" action={ templ.URL(fmt.Sprintf("/dashboard/providers/%d/edit", provider.ID)) } method="POST">
 			<section class="provider-form-card">
-				<div class="provider-form-section-heading"><span class="provider-form-step"><i class="ri-edit-line" aria-hidden="true"></i></span><div><h2>Provider details</h2><p>Update the display name for this connection.</p></div></div>
+				<div class="provider-form-section-heading"><span class="provider-form-step"><i class="ri-edit-line" aria-hidden="true"></i></span><div><h2>Provider details</h2><p>Update the display name and failover order.</p></div></div>
 				<div class="provider-fields">
 					<div class="provider-field"><label for="name">Provider name</label>@components.Input("name", "Enter provider name", provider.Name)</div>
 					<div class="provider-field provider-channel-summary"><span>Channel</span><strong>{ strings.ToUpper(configType) }</strong></div>
+					<div class="provider-field"><label for="priority">Failover priority</label>@components.NumberInput("priority", "0", &provider.Priority)<p>Lower values are tried first after the selected provider fails.</p></div>
+					<div class="provider-field"><label for="weight">Failover weight</label>@components.NumberInput("weight", "1", &provider.Weight)<p>Higher weight is more likely to be tried first among equal-priority backups.</p></div>
 				</div>
 			</section>
 			<section class="provider-form-card">

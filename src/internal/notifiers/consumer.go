@@ -100,7 +100,7 @@ func (n Notifier) consumeMessage(ctx context.Context, client *goredis.Client, st
 
 	provider, err := n.ProviderService.GetProvider(message.ProviderID)
 	if err == nil {
-		err = SendWithRetry(func() error { return n.SendMessage(provider, message) }, message.Retry)
+		err = n.SendWithFailover(provider, message, message.Retry)
 	}
 	if err != nil {
 		n.Logger.Error("failed to send queued message", zap.Int64("message_id", message.ID), zap.Error(err))

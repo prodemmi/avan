@@ -47,10 +47,24 @@ func (w SettingHandler) Update(c *gin.Context) {
 		sendError(err)
 		return
 	}
+	if body.Key == services.APISecurityPolicySettingKey {
+		value := "{}"
+		if body.Value != nil {
+			value = *body.Value
+		}
+		if _, err := services.ParseSecurityPolicy(value); err != nil {
+			c = ContextWithError(c, err.Error())
+			w.Index(c)
+			return
+		}
+	}
 
 	workspaceID := GetWorkspaceIDFromContext(c)
 	err := w.SettingService.UpdateSetting(workspaceID, body.Key, body.Value)
-	sendError(err)
+	if err != nil {
+		sendError(err)
+		return
+	}
 
 	time.Sleep(1 * time.Second)
 

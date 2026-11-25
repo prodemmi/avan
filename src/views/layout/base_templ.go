@@ -34,6 +34,77 @@ func primaryColorStyle(color string) string {
 	return fmt.Sprintf("--avan-primary:%s;--avan-primary-contrast:%s;--color-primary:%s;--color-primary-50:color-mix(in srgb,%s 7%%,white);--color-primary-100:color-mix(in srgb,%s 14%%,white);--color-primary-200:color-mix(in srgb,%s 28%%,white);--color-primary-300:color-mix(in srgb,%s 42%%,white);--color-primary-400:color-mix(in srgb,%s 68%%,white);--color-primary-500:%s;--color-primary-600:color-mix(in srgb,%s 90%%,black);--color-primary-700:color-mix(in srgb,%s 78%%,black);--color-primary-800:color-mix(in srgb,%s 65%%,black);--color-primary-900:color-mix(in srgb,%s 52%%,black);--color-primary-950:color-mix(in srgb,%s 36%%,black)", color, primaryColorContrast(color), color, color, color, color, color, color, color, color, color, color, color, color)
 }
 
+func WorkspaceSwitcher(workspaces []sqlc.Workspace, selected sqlc.Workspace) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form class=\"workspace-switcher\" action=\"/dashboard/switch-workspace\" method=\"GET\"><label class=\"sr-only\" for=\"active-workspace\">Workspace</label> <select id=\"active-workspace\" name=\"workspace-id\" aria-label=\"Workspace\" onchange=\"this.form.requestSubmit()\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, workspace := range workspaces {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<option value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var2 string
+			templ_7745c5c3_Var2, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fmt.Sprint(workspace.ID)).Resolve(ctx)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout/base.templ`, Line: 33, Col: 44}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if workspace.ID == selected.ID {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " selected")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, ">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(workspace.Name)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout/base.templ`, Line: 33, Col: 105}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</option>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</select></form>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
 func Layout(content templ.Component, baseMenu string, menuItems []MenuItem) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -57,38 +128,38 @@ func Layout(content templ.Component, baseMenu string, menuItems []MenuItem) temp
 			templ_7745c5c3_ElementWriter := templ_7745c5c3_Buffer
 			templ_7745c5c3_Buffer := templ.GetBuffer()
 			var templ_7745c5c3_ElementScripts []templ.ComponentScript
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<html lang=\"en\" dir=\"ltr\" class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<html lang=\"en\" dir=\"ltr\" class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var2 = []any{theme}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var2...)
+			var templ_7745c5c3_Var5 = []any{theme}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var5...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var3 string
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var2).String()).Resolve(ctx)
+			var templ_7745c5c3_Var6 string
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var5).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout/base.templ`, Line: 1, Col: 0}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" style=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" style=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(primaryColorStyle(primaryColor))
+			var templ_7745c5c3_Var7 string
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(primaryColorStyle(primaryColor))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout/base.templ`, Line: 31, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout/base.templ`, Line: 42, Col: 82}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -102,7 +173,7 @@ func Layout(content templ.Component, baseMenu string, menuItems []MenuItem) temp
 			}
 			templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Avan</title><link href=\"/public/styles.css\" rel=\"stylesheet\"><link href=\"https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css\" rel=\"stylesheet\"><script src=\"/public/admin.js\" defer></script></head><body class=\"admin-shell text-gray-900 dark:text-gray-200\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Avan</title><link href=\"/public/styles.css\" rel=\"stylesheet\"><link href=\"https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css\" rel=\"stylesheet\"><script src=\"/public/admin.js\" defer></script></head><body class=\"admin-shell text-gray-900 dark:text-gray-200\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -110,7 +181,7 @@ func Layout(content templ.Component, baseMenu string, menuItems []MenuItem) temp
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"admin-main bg-gray-100 dark:bg-gray-900\"><header class=\"admin-topbar\"><div class=\"admin-topbar-title\"><span class=\"admin-eyebrow\">WORKSPACE</span> <strong>Admin console</strong></div><div class=\"admin-topbar-actions\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div class=\"admin-main bg-gray-100 dark:bg-gray-900\"><header class=\"admin-topbar\"><div class=\"admin-topbar-title\"><span class=\"admin-eyebrow\">WORKSPACE</span> <strong>Admin console</strong></div><div class=\"admin-topbar-actions\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -120,7 +191,7 @@ func Layout(content templ.Component, baseMenu string, menuItems []MenuItem) temp
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<button class=\"language-toggle\" id=\"language-toggle\" type=\"button\" aria-label=\"Switch language\" title=\"Switch language\"><i class=\"ri-translate-2\"></i> <span>EN</span><span class=\"language-divider\">/</span><span lang=\"fa\">فارسی</span></button></div></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<button class=\"language-toggle\" id=\"language-toggle\" type=\"button\" aria-label=\"Switch language\" title=\"Switch language\"><i class=\"ri-translate-2\"></i> <span>EN</span><span class=\"language-divider\">/</span><span lang=\"fa\">فارسی</span></button></div></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -128,26 +199,26 @@ func Layout(content templ.Component, baseMenu string, menuItems []MenuItem) temp
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<main class=\"admin-content\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<main class=\"admin-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if messages, ok := ctx.Value("messages").([]string); ok {
 			for _, message := range messages {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"admin-alert admin-alert-info mb-4\" role=\"alert\"><div class=\"bg-blue-500 dark:bg-blue-700 text-white font-bold rounded-t px-4 py-2\">Info</div><div class=\"border border-t-0 border-blue-400 dark:border-blue-600 rounded-b bg-blue-100 dark:bg-blue-950 px-4 py-3 text-blue-700 dark:text-blue-300\"><p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"admin-alert admin-alert-info mb-4\" role=\"alert\"><div class=\"bg-blue-500 dark:bg-blue-700 text-white font-bold rounded-t px-4 py-2\">Info</div><div class=\"border border-t-0 border-blue-400 dark:border-blue-600 rounded-b bg-blue-100 dark:bg-blue-950 px-4 py-3 text-blue-700 dark:text-blue-300\"><p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var5 string
-				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(message)
+				var templ_7745c5c3_Var8 string
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout/base.templ`, Line: 67, Col: 21}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout/base.templ`, Line: 78, Col: 21}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</p></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</p></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -155,20 +226,20 @@ func Layout(content templ.Component, baseMenu string, menuItems []MenuItem) temp
 		}
 		if errorMessages, ok := ctx.Value("errors").([]string); ok {
 			for _, errorMessage := range errorMessages {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"admin-alert admin-alert-error mb-4\" role=\"alert\"><div class=\"bg-red-500 dark:bg-red-700 text-white font-bold rounded-t px-4 py-2\">Error</div><div class=\"border border-t-0 border-red-400 dark:border-red-600 rounded-b bg-red-100 dark:bg-red-950 px-4 py-3 text-red-700 dark:text-red-300\"><p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"admin-alert admin-alert-error mb-4\" role=\"alert\"><div class=\"bg-red-500 dark:bg-red-700 text-white font-bold rounded-t px-4 py-2\">Error</div><div class=\"border border-t-0 border-red-400 dark:border-red-600 rounded-b bg-red-100 dark:bg-red-950 px-4 py-3 text-red-700 dark:text-red-300\"><p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var6 string
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(errorMessage)
+				var templ_7745c5c3_Var9 string
+				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(errorMessage)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout/base.templ`, Line: 79, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout/base.templ`, Line: 90, Col: 26}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</p></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</p></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -178,7 +249,7 @@ func Layout(content templ.Component, baseMenu string, menuItems []MenuItem) temp
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</main></div><script>\n\t\t\t\tdocument.addEventListener(\"DOMContentLoaded\", function () {\n\t\t\t\t\tconst scrollContainer = document.querySelector(\".admin-content\");\n\t\t\t\t\tconst scrollPosition = sessionStorage.getItem(\"scrollPosition\");\n\t\t\t\t\tif (scrollPosition) scrollContainer.scrollTo(0, Number(scrollPosition));\n\t\t\t\t\tscrollContainer.addEventListener(\"scrollend\", function () {\n\t\t\t\t\t\tsessionStorage.setItem(\"scrollPosition\", scrollContainer.scrollTop);\n\t\t\t\t\t});\n\t\t\t\t});\n\t\t\t</script><script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js\" integrity=\"sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw==\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\"></script></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</main></div><script>\n\t\t\t\tdocument.addEventListener(\"DOMContentLoaded\", function () {\n\t\t\t\t\tconst scrollContainer = document.querySelector(\".admin-content\");\n\t\t\t\t\tconst scrollPosition = sessionStorage.getItem(\"scrollPosition\");\n\t\t\t\t\tif (scrollPosition) scrollContainer.scrollTo(0, Number(scrollPosition));\n\t\t\t\t\tscrollContainer.addEventListener(\"scrollend\", function () {\n\t\t\t\t\t\tsessionStorage.setItem(\"scrollPosition\", scrollContainer.scrollTop);\n\t\t\t\t\t});\n\t\t\t\t});\n\t\t\t</script><script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js\" integrity=\"sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw==\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\"></script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

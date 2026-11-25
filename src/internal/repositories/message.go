@@ -3,6 +3,8 @@ package repositories
 import (
 	"avan/internal/db/sqlc"
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -46,6 +48,33 @@ func (w MessageRepository) CreateMessage(ctx context.Context, workspaceID, provi
 	})
 }
 
+func (w MessageRepository) CreateIdempotentMessage(ctx context.Context, workspaceID, providerID int64, templateID *int64, recipient, content string, status int8, retry bool, scheduleAt *time.Time, payload *string, idempotencyKey, requestHash string) (sqlc.Message, bool, error) {
+	message, err := w.Base.DB.Queries.CreateIdempotentMessagePostgresql(ctx, sqlc.CreateIdempotentMessagePostgresqlParams{
+		WorkspaceID:    workspaceID,
+		ProviderID:     providerID,
+		TemplateID:     templateID,
+		Recipient:      recipient,
+		Content:        content,
+		Status:         int64(status),
+		Retry:          retry,
+		ScheduleAt:     scheduleAt,
+		Payload:        payload,
+		IdempotencyKey: sql.NullString{String: idempotencyKey, Valid: true},
+		RequestHash:    sql.NullString{String: requestHash, Valid: true},
+	})
+	if err == nil {
+		return message, true, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return sqlc.Message{}, false, err
+	}
+	message, err = w.Base.DB.Queries.GetMessageByIdempotencyKeyPostgresql(ctx, sqlc.GetMessageByIdempotencyKeyPostgresqlParams{
+		WorkspaceID:    workspaceID,
+		IdempotencyKey: sql.NullString{String: idempotencyKey, Valid: true},
+	})
+	return message, false, err
+}
+
 func (w MessageRepository) UpdateMessageStatus(ctx context.Context, messageID int64, status int32) error {
 	return w.Base.DB.Queries.UpdateMessageStatusPostgresql(ctx, sqlc.UpdateMessageStatusPostgresqlParams{
 		ID:     messageID,
@@ -73,6 +102,13 @@ func (w MessageRepository) GetProviderStats(ctx context.Context, workspaceID, pr
 
 func (w MessageRepository) GetMessage(ctx context.Context, messageID int64) (sqlc.Message, error) {
 	return w.Base.DB.Queries.GetMessagePostgresql(ctx, messageID)
+}
+
+func (w MessageRepository) GetMessageForWorkspace(ctx context.Context, messageID, workspaceID int64) (sqlc.GetMessageStatusForWorkspacePostgresqlRow, error) {
+	return w.Base.DB.Queries.GetMessageStatusForWorkspacePostgresql(ctx, sqlc.GetMessageStatusForWorkspacePostgresqlParams{
+		ID:          messageID,
+		WorkspaceID: workspaceID,
+	})
 }
 
 func (w MessageRepository) GetTimeDistribution(ctx context.Context, workspaceID, providerID int64, startDate, endDate *time.Time) ([]sqlc.GetTimeDistributionPostgresqlRow, error) {

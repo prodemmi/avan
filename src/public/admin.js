@@ -353,11 +353,32 @@
     "Leave blank to keep unchanged": "برای حفظ مقدار فعلی خالی بگذارید",
     "Save changes": "ذخیره تغییرات",
     "Delete user": "حذف کاربر",
-    "Workspace access": "دسترسی فضای کاری"
+    "Workspace access": "دسترسی فضای کاری",
+    "Edit user details": "ویرایش جزئیات کاربر",
+    "Close user editor": "بستن ویرایشگر کاربر",
+    "User details": "جزئیات کاربر",
+    "System role": "نقش سیستمی",
+    "System roles are immutable.": "نقش‌های سیستمی تغییرناپذیرند.",
+    "Delete role": "حذف نقش"
   };
 
   const originalText = new WeakMap();
   const originalAttributes = new WeakMap();
+  const localizeDates = (language) => {
+    const locale = language === "fa" ? "fa-IR-u-ca-persian" : "en-US-u-ca-gregory";
+    document.querySelectorAll("[data-localized-date], [data-localized-date-time]").forEach((element) => {
+      const value = element.getAttribute("datetime");
+      if (!value) return;
+      const dateOnly = element.hasAttribute("data-localized-date");
+      const date = new Date(dateOnly ? `${value}T12:00:00Z` : value);
+      if (Number.isNaN(date.getTime())) return;
+      const options = dateOnly
+        ? { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }
+        : { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
+      element.textContent = new Intl.DateTimeFormat(locale, options).format(date);
+    });
+  };
+
   const translate = (language) => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "fa" ? "rtl" : "ltr";
@@ -389,6 +410,7 @@
       }
       originalAttributes.set(element, saved);
     });
+    localizeDates(language);
 
     const normalizePath = (path) => path.replace(/\/+$/, "") || "/";
     const currentPath = normalizePath(location.pathname);
@@ -423,10 +445,17 @@
   });
 
   if (document.addEventListener) {
+    document.addEventListener("click", (event) => {
+      const trigger = event.target.closest?.("[data-user-drawer]");
+      const drawer = trigger && document.getElementById(trigger.dataset.userDrawer);
+      if (drawer instanceof HTMLDialogElement && !drawer.open) drawer.showModal();
+    });
+
     document.addEventListener("submit", (event) => {
       const form = event.target;
-      if (form instanceof HTMLFormElement && /\/delete\/?$/.test(new URL(form.action, location.href).pathname)) {
-        const name = form.querySelector('button[type="submit"]')?.textContent.trim() || "this item";
+      const action = event.submitter?.formAction || form.action;
+      if (form instanceof HTMLFormElement && /\/delete\/?$/.test(new URL(action, location.href).pathname)) {
+        const name = event.submitter?.textContent.trim() || form.querySelector('button[type="submit"]')?.textContent.trim() || "this item";
         if (!window.confirm(`Delete ${name}? This cannot be undone.`)) event.preventDefault();
       }
     });

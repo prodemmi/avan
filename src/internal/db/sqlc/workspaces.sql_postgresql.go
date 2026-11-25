@@ -33,7 +33,7 @@ func (q *Queries) DeleteWorkspacePostgresql(ctx context.Context, id int64) error
 }
 
 const findWorkspaceByIdPostgresql = `-- name: FindWorkspaceByIdPostgresql :one
-SELECT id, owner_id, name, is_default, created_at, updated_at FROM workspaces WHERE id = $1 LIMIT 1
+SELECT id, owner_id, name, is_default, created_at, updated_at, business_id FROM workspaces WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) FindWorkspaceByIdPostgresql(ctx context.Context, id int64) (Workspace, error) {
@@ -46,12 +46,13 @@ func (q *Queries) FindWorkspaceByIdPostgresql(ctx context.Context, id int64) (Wo
 		&i.IsDefault,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BusinessID,
 	)
 	return i, err
 }
 
 const findWorkspaceByNamePostgresql = `-- name: FindWorkspaceByNamePostgresql :one
-SELECT id, owner_id, name, is_default, created_at, updated_at FROM workspaces WHERE name = $1 LIMIT 1
+SELECT id, owner_id, name, is_default, created_at, updated_at, business_id FROM workspaces WHERE name = $1 LIMIT 1
 `
 
 func (q *Queries) FindWorkspaceByNamePostgresql(ctx context.Context, name string) (Workspace, error) {
@@ -64,12 +65,13 @@ func (q *Queries) FindWorkspaceByNamePostgresql(ctx context.Context, name string
 		&i.IsDefault,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BusinessID,
 	)
 	return i, err
 }
 
 const getDefaultWorkspacePostgresql = `-- name: GetDefaultWorkspacePostgresql :one
-SELECT id, owner_id, name, is_default, created_at, updated_at FROM workspaces
+SELECT id, owner_id, name, is_default, created_at, updated_at, business_id FROM workspaces
 WHERE (owner_id = $1 AND is_default = true)
    OR id = (SELECT workspace_id FROM user_roles WHERE user_id = $1 ORDER BY created_at LIMIT 1)
 ORDER BY is_default DESC
@@ -86,6 +88,7 @@ func (q *Queries) GetDefaultWorkspacePostgresql(ctx context.Context, ownerID int
 		&i.IsDefault,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BusinessID,
 	)
 	return i, err
 }
@@ -96,7 +99,8 @@ SELECT workspaces.id,
        workspaces.name,
        workspaces.is_default,
        workspaces.created_at,
-       workspaces.updated_at
+       workspaces.updated_at,
+       workspaces.business_id
 FROM workspaces
          LEFT JOIN api_keys ON workspaces.id = api_keys.workspace_id
 WHERE api_keys.api_key = $1
@@ -113,12 +117,13 @@ func (q *Queries) GetWorkspaceByTokenPostgresql(ctx context.Context, apiKey stri
 		&i.IsDefault,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BusinessID,
 	)
 	return i, err
 }
 
 const listAllWorkspacesPostgresql = `-- name: ListAllWorkspacesPostgresql :many
-SELECT id, owner_id, name, is_default, created_at, updated_at FROM workspaces ORDER BY created_at DESC
+SELECT id, owner_id, name, is_default, created_at, updated_at, business_id FROM workspaces ORDER BY created_at DESC
 `
 
 func (q *Queries) ListAllWorkspacesPostgresql(ctx context.Context) ([]Workspace, error) {
@@ -137,6 +142,7 @@ func (q *Queries) ListAllWorkspacesPostgresql(ctx context.Context) ([]Workspace,
 			&i.IsDefault,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.BusinessID,
 		); err != nil {
 			return nil, err
 		}
@@ -152,7 +158,7 @@ func (q *Queries) ListAllWorkspacesPostgresql(ctx context.Context) ([]Workspace,
 }
 
 const listWorkspacesPostgresql = `-- name: ListWorkspacesPostgresql :many
-SELECT id, owner_id, name, is_default, created_at, updated_at
+SELECT id, owner_id, name, is_default, created_at, updated_at, business_id
 FROM workspaces
 WHERE owner_id = $1 OR id IN (SELECT workspace_id FROM user_roles WHERE user_id = $1)
 ORDER BY created_at DESC
@@ -174,6 +180,7 @@ func (q *Queries) ListWorkspacesPostgresql(ctx context.Context, ownerID int64) (
 			&i.IsDefault,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.BusinessID,
 		); err != nil {
 			return nil, err
 		}

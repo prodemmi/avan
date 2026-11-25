@@ -5,6 +5,8 @@ import (
 	"avan/internal/redis"
 	"avan/internal/repositories"
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -102,6 +104,20 @@ func (w WorkspaceService) GetWorkspace(id int64) (sqlc.Workspace, error) {
 		return w.Repo.FindWorkspaceById(id)
 	})
 	return result, err
+}
+
+func (w WorkspaceService) GetAPISecurityPolicy(workspaceID int64) (SecurityPolicy, error) {
+	setting, err := w.SettingService.GetSetting(workspaceID, APISecurityPolicySettingKey)
+	if errors.Is(err, sql.ErrNoRows) {
+		return SecurityPolicy{}, nil
+	}
+	if err != nil {
+		return SecurityPolicy{}, err
+	}
+	if setting.Value == nil {
+		return SecurityPolicy{}, nil
+	}
+	return ParseSecurityPolicy(*setting.Value)
 }
 
 func (w WorkspaceService) CreateDefaultWorkspace() {

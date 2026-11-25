@@ -40,9 +40,11 @@ func (q *Queries) CreateEmailConfigPostgresql(ctx context.Context, arg CreateEma
 }
 
 const createProviderPostgresql = `-- name: CreateProviderPostgresql :one
-INSERT INTO providers (workspace_id, owner_id, config_type, name)
-VALUES ($1, $2, $3, $4)
-RETURNING id, workspace_id, owner_id, config_type, name, created_at, updated_at
+INSERT INTO providers (workspace_id, app_id, owner_id, config_type, name, priority, weight)
+SELECT $1, apps.id, $2, $3, $4, $5, $6
+FROM apps
+WHERE apps.workspace_id = $1 AND apps.name = 'Default'
+RETURNING id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight
 `
 
 type CreateProviderPostgresqlParams struct {
@@ -50,6 +52,8 @@ type CreateProviderPostgresqlParams struct {
 	OwnerID     int64  `db:"owner_id" json:"owner_id"`
 	ConfigType  int64  `db:"config_type" json:"config_type"`
 	Name        string `db:"name" json:"name"`
+	Priority    int64  `db:"priority" json:"priority"`
+	Weight      int64  `db:"weight" json:"weight"`
 }
 
 func (q *Queries) CreateProviderPostgresql(ctx context.Context, arg CreateProviderPostgresqlParams) (Provider, error) {
@@ -58,6 +62,8 @@ func (q *Queries) CreateProviderPostgresql(ctx context.Context, arg CreateProvid
 		arg.OwnerID,
 		arg.ConfigType,
 		arg.Name,
+		arg.Priority,
+		arg.Weight,
 	)
 	var i Provider
 	err := row.Scan(
@@ -68,6 +74,9 @@ func (q *Queries) CreateProviderPostgresql(ctx context.Context, arg CreateProvid
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AppID,
+		&i.Priority,
+		&i.Weight,
 	)
 	return i, err
 }
@@ -95,8 +104,8 @@ func (q *Queries) CreateSlackConfigPostgresql(ctx context.Context, arg CreateSla
 }
 
 const createSmsConfigPostgresql = `-- name: CreateSmsConfigPostgresql :exec
-INSERT INTO sms_configs (workspace_id, provider_id, owner_id, url, method, auth_token_key, auth_token_value, is_auth_in_header, body_schema)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO sms_configs (workspace_id, provider_id, owner_id, url, method, auth_token_key, auth_token_value, is_auth_in_header, body_schema, body_encoding, auth_type, auth_username, account_sid, sender)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 `
 
 type CreateSmsConfigPostgresqlParams struct {
@@ -109,6 +118,11 @@ type CreateSmsConfigPostgresqlParams struct {
 	AuthTokenValue *string `db:"auth_token_value" json:"auth_token_value"`
 	IsAuthInHeader *bool   `db:"is_auth_in_header" json:"is_auth_in_header"`
 	BodySchema     *string `db:"body_schema" json:"body_schema"`
+	BodyEncoding   string  `db:"body_encoding" json:"body_encoding"`
+	AuthType       string  `db:"auth_type" json:"auth_type"`
+	AuthUsername   *string `db:"auth_username" json:"auth_username"`
+	AccountSid     *string `db:"account_sid" json:"account_sid"`
+	Sender         *string `db:"sender" json:"sender"`
 }
 
 func (q *Queries) CreateSmsConfigPostgresql(ctx context.Context, arg CreateSmsConfigPostgresqlParams) error {
@@ -122,6 +136,11 @@ func (q *Queries) CreateSmsConfigPostgresql(ctx context.Context, arg CreateSmsCo
 		arg.AuthTokenValue,
 		arg.IsAuthInHeader,
 		arg.BodySchema,
+		arg.BodyEncoding,
+		arg.AuthType,
+		arg.AuthUsername,
+		arg.AccountSid,
+		arg.Sender,
 	)
 	return err
 }
@@ -215,7 +234,7 @@ func (q *Queries) GetEmailConfigPostgresql(ctx context.Context, providerID int64
 }
 
 const getProviderByNamePostgresql = `-- name: GetProviderByNamePostgresql :one
-SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at FROM providers
+SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight FROM providers
 WHERE name = $1
 `
 
@@ -230,12 +249,15 @@ func (q *Queries) GetProviderByNamePostgresql(ctx context.Context, name string) 
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AppID,
+		&i.Priority,
+		&i.Weight,
 	)
 	return i, err
 }
 
 const getProviderPostgresql = `-- name: GetProviderPostgresql :one
-SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at FROM providers
+SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight FROM providers
 WHERE id = $1
 `
 
@@ -250,6 +272,9 @@ func (q *Queries) GetProviderPostgresql(ctx context.Context, id int64) (Provider
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AppID,
+		&i.Priority,
+		&i.Weight,
 	)
 	return i, err
 }
@@ -275,7 +300,7 @@ func (q *Queries) GetSlackConfigPostgresql(ctx context.Context, providerID int64
 }
 
 const getSmsConfigPostgresql = `-- name: GetSmsConfigPostgresql :one
-SELECT id, workspace_id, owner_id, provider_id, url, method, auth_token_key, auth_token_value, is_auth_in_header, created_at, updated_at, body_schema FROM sms_configs
+SELECT id, workspace_id, owner_id, provider_id, url, method, auth_token_key, auth_token_value, is_auth_in_header, created_at, updated_at, body_schema, body_encoding, auth_type, auth_username, account_sid, sender FROM sms_configs
 WHERE provider_id = $1
 `
 
@@ -295,6 +320,11 @@ func (q *Queries) GetSmsConfigPostgresql(ctx context.Context, providerID int64) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.BodySchema,
+		&i.BodyEncoding,
+		&i.AuthType,
+		&i.AuthUsername,
+		&i.AccountSid,
+		&i.Sender,
 	)
 	return i, err
 }
@@ -340,7 +370,7 @@ func (q *Queries) GetWebhookConfigPostgresql(ctx context.Context, providerID int
 }
 
 const listProvidersPostgresql = `-- name: ListProvidersPostgresql :many
-SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at FROM providers
+SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight FROM providers
 WHERE workspace_id = $1
 ORDER BY created_at DESC
 `
@@ -362,6 +392,9 @@ func (q *Queries) ListProvidersPostgresql(ctx context.Context, workspaceID int64
 			&i.Name,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AppID,
+			&i.Priority,
+			&i.Weight,
 		); err != nil {
 			return nil, err
 		}
@@ -405,17 +438,24 @@ func (q *Queries) UpdateEmailConfigPostgresql(ctx context.Context, arg UpdateEma
 
 const updateProviderPostgresql = `-- name: UpdateProviderPostgresql :exec
 UPDATE providers
-SET name = $2
+SET name = $2, priority = $3, weight = $4
 WHERE id = $1
 `
 
 type UpdateProviderPostgresqlParams struct {
-	ID   int64  `db:"id" json:"id"`
-	Name string `db:"name" json:"name"`
+	ID       int64  `db:"id" json:"id"`
+	Name     string `db:"name" json:"name"`
+	Priority int64  `db:"priority" json:"priority"`
+	Weight   int64  `db:"weight" json:"weight"`
 }
 
 func (q *Queries) UpdateProviderPostgresql(ctx context.Context, arg UpdateProviderPostgresqlParams) error {
-	_, err := q.db.ExecContext(ctx, updateProviderPostgresql, arg.ID, arg.Name)
+	_, err := q.db.ExecContext(ctx, updateProviderPostgresql,
+		arg.ID,
+		arg.Name,
+		arg.Priority,
+		arg.Weight,
+	)
 	return err
 }
 
@@ -442,7 +482,12 @@ SET url = $2,
     auth_token_key = $4,
     auth_token_value = COALESCE(NULLIF($5, ''), auth_token_value),
     is_auth_in_header  = $6,
-    body_schema = $7
+    body_schema = $7,
+    body_encoding = $8,
+    auth_type = $9,
+    auth_username = $10,
+    account_sid = $11,
+    sender = $12
 WHERE provider_id = $1
 `
 
@@ -454,6 +499,11 @@ type UpdateSmsConfigPostgresqlParams struct {
 	Column5        interface{} `db:"column_5" json:"column_5"`
 	IsAuthInHeader *bool       `db:"is_auth_in_header" json:"is_auth_in_header"`
 	BodySchema     *string     `db:"body_schema" json:"body_schema"`
+	BodyEncoding   string      `db:"body_encoding" json:"body_encoding"`
+	AuthType       string      `db:"auth_type" json:"auth_type"`
+	AuthUsername   *string     `db:"auth_username" json:"auth_username"`
+	AccountSid     *string     `db:"account_sid" json:"account_sid"`
+	Sender         *string     `db:"sender" json:"sender"`
 }
 
 func (q *Queries) UpdateSmsConfigPostgresql(ctx context.Context, arg UpdateSmsConfigPostgresqlParams) error {
@@ -465,6 +515,11 @@ func (q *Queries) UpdateSmsConfigPostgresql(ctx context.Context, arg UpdateSmsCo
 		arg.Column5,
 		arg.IsAuthInHeader,
 		arg.BodySchema,
+		arg.BodyEncoding,
+		arg.AuthType,
+		arg.AuthUsername,
+		arg.AccountSid,
+		arg.Sender,
 	)
 	return err
 }

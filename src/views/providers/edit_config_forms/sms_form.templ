@@ -7,44 +7,98 @@ import (
 )
 
 templ SmsForm(config sqlc.SmsConfig) {
+	{{ bodyEncoding := config.BodyEncoding; if bodyEncoding == "" { bodyEncoding = "json" } }}
+	{{ authType := config.AuthType; if authType == "" { authType = "token" } }}
+	{{ bodySchema := `{"to":"$send_to","message":"$message"}`; if config.BodySchema != nil && *config.BodySchema != "" { bodySchema = *config.BodySchema } }}
+	{{ authKey := ""; if config.AuthTokenKey != nil { authKey = *config.AuthTokenKey } }}
+	{{ authUsername := ""; if config.AuthUsername != nil { authUsername = *config.AuthUsername } }}
+	{{ accountSID := ""; if config.AccountSid != nil { accountSID = *config.AccountSid } }}
+	{{ sender := ""; if config.Sender != nil { sender = *config.Sender } }}
 	<div class="provider-fields">
 		<div class="provider-field provider-field-wide">
 			<label for="sms_url">Provider URL</label>
 			@components.UrlInput("sms_url", "https://api.example.com/send", config.Url)
-			<p>Use <code>$send_to</code> and <code>$message</code> in a GET URL when your gateway expects query parameters.</p>
+			<p>Use <code>$send_to</code>, <code>$message</code>, and <code>$account_sid</code> URL placeholders where applicable.</p>
 		</div>
 		<div class="provider-field">
 			<label for="sms_method">HTTP method</label>
-			{{ options := []components.SelectOption{{Value: "0", Label: "GET"}, {Value: "1", Label: "POST"}} }}
-			@components.Select("sms_method", options, strconv.Itoa(int(config.Method)))
+			{{ methodOptions := []components.SelectOption{{Value: "0", Label: "GET"}, {Value: "1", Label: "POST"}} }}
+			@components.Select("sms_method", methodOptions, strconv.Itoa(int(config.Method)))
 		</div>
-		<div id="sms-post-body" class={ "provider-field", "provider-field-wide", "sms-post-body", templ.KV("hidden", config.Method != 1) }>
-			<label for="sms_body_schema">POST body template (JSON)</label>
-			{{ bodySchema := `{"to":"$send_to","message":"$message"}`; if config.BodySchema != nil && *config.BodySchema != "" { bodySchema = *config.BodySchema } }}
-			<textarea class="provider-json-editor" id="sms_body_schema" name="sms_body_schema" rows="8" spellcheck="false">{ bodySchema }</textarea>
-			<p>Available variables: <code>$send_to</code>, <code>$message</code>, <code>$payload</code>, <code>$retry</code>, <code>$schedule_at</code>, <code>$provider_id</code>, <code>$template_id</code>, <code>$workspace_id</code>. <code>$payload</code> inserts a JSON object and <code>$retry</code> a boolean.</p>
+		<div id="sms-post-options" class={ "provider-field", "provider-field-wide", templ.KV("hidden", config.Method != 1) }>
+			<div class="provider-field">
+				<label for="sms_body_encoding">POST body encoding</label>
+				{{ encodingOptions := []components.SelectOption{{Value: "json", Label: "JSON"}, {Value: "form", Label: "application/x-www-form-urlencoded"}} }}
+				@components.Select("sms_body_encoding", encodingOptions, bodyEncoding)
+			</div>
+			<div class="provider-field provider-field-wide">
+				<label id="sms-body-schema-label" for="sms_body_schema">POST body template</label>
+				<textarea class="provider-json-editor" id="sms_body_schema" name="sms_body_schema" rows="8" spellcheck="false">{ bodySchema }</textarea>
+				<p>Enter a JSON object. Form encoding sends scalar fields; available variables include <code>$send_to</code>, <code>$message</code>, <code>$sender</code>, <code>$username</code>, <code>$payload</code>, <code>$retry</code>, <code>$schedule_at</code>, <code>$provider_id</code>, <code>$template_id</code>, and <code>$workspace_id</code>.</p>
+			</div>
 		</div>
-		<div class="provider-field provider-field-inline">
-			<label for="sms_is_auth_in_header">Send auth in header</label>
+		<div class="provider-field">
+			<label for="sms_auth_type">Authentication type</label>
+			{{ authOptions := []components.SelectOption{{Value: "token", Label: "Token / custom header"}, {Value: "basic", Label: "HTTP Basic"}} }}
+			@components.Select("sms_auth_type", authOptions, authType)
+		</div>
+		<div id="sms-auth-username" class={ "provider-field", templ.KV("hidden", authType != "basic" && !(config.Method == 1 && bodyEncoding == "form")) }>
+			<label id="sms-auth-username-label" for="sms_auth_username">Request username</label>
+			@components.OptionalInput("sms_auth_username", "API username or Basic Auth username", authUsername)
+		</div>
+		<div id="sms-account-sid" class={ "provider-field", templ.KV("hidden", authType != "basic") }>
+			<label for="sms_account_sid">Account SID</label>
+			@components.OptionalInput("sms_account_sid", "Required when the endpoint uses $account_sid", accountSID)
+		</div>
+		<div id="sms-sender" class={ "provider-field", templ.KV("hidden", config.Method != 1 || bodyEncoding != "form") }>
+			<label for="sms_sender">Sender number / ID</label>
+			@components.OptionalInput("sms_sender", "Provider sender number or ID", sender)
+		</div>
+		<div id="sms-header-auth" class={ "provider-field", "provider-field-inline", templ.KV("hidden", authType == "basic") }>
+			<label for="sms_is_auth_in_header">Send token in header</label>
 			{{ isAuthInHeader := config.IsAuthInHeader != nil && *config.IsAuthInHeader }}
 			@components.Checkbox("sms_is_auth_in_header", isAuthInHeader)
 		</div>
-		<div class="provider-field">
+		<div id="sms-auth-key" class={ "provider-field", templ.KV("hidden", authType == "basic") }>
 			<label for="sms_auth_token_key">Auth token key</label>
-			{{ authTokenKey := ""; if config.AuthTokenKey != nil { authTokenKey = *config.AuthTokenKey } }}
-			@components.OptionalInput("sms_auth_token_key", "e.g. Authorization", authTokenKey)
+			@components.OptionalInput("sms_auth_token_key", "e.g. Authorization or password", authKey)
 		</div>
 		<div class="provider-field">
-			<label for="sms_auth_token_value">Auth token value</label>
+			<label id="sms-auth-value-label" for="sms_auth_token_value">Auth token value</label>
 			@components.OptionalPasswordInput("sms_auth_token_value", "Leave blank to keep current", "")
-			<p>For security, the saved token is not shown.</p>
+			<p>For security, the saved token or password is not shown.</p>
 		</div>
 	</div>
 	<script>
 		const methodSelect = document.getElementById("sms_method");
-		const bodySchema = document.getElementById("sms-post-body");
-		const updateBodyVisibility = () => bodySchema?.classList.toggle("hidden", methodSelect?.value !== "1");
-		methodSelect?.addEventListener("change", updateBodyVisibility);
-		updateBodyVisibility();
+		const encodingSelect = document.getElementById("sms_body_encoding");
+		const authTypeSelect = document.getElementById("sms_auth_type");
+		const postOptions = document.getElementById("sms-post-options");
+		const usernameField = document.getElementById("sms-auth-username");
+		const usernameLabel = document.getElementById("sms-auth-username-label");
+		const accountSIDField = document.getElementById("sms-account-sid");
+		const senderField = document.getElementById("sms-sender");
+		const headerAuthField = document.getElementById("sms-header-auth");
+		const authKeyField = document.getElementById("sms-auth-key");
+		const authValueLabel = document.getElementById("sms-auth-value-label");
+		const bodySchemaLabel = document.getElementById("sms-body-schema-label");
+		const updateVisibility = () => {
+			const isPost = methodSelect?.value === "1";
+			const isForm = encodingSelect?.value === "form";
+			const isBasic = authTypeSelect?.value === "basic";
+			postOptions.hidden = !isPost;
+			usernameField.hidden = !isBasic && !(isPost && isForm);
+			accountSIDField.hidden = !isBasic;
+			senderField.hidden = !(isPost && isForm);
+			headerAuthField.hidden = isBasic;
+			authKeyField.hidden = isBasic;
+			usernameLabel.textContent = isBasic ? "Basic Auth username (API Key SID)" : "Request username";
+			authValueLabel.textContent = isBasic ? "Basic Auth password / API key secret" : "Auth token value";
+			bodySchemaLabel.textContent = isForm ? "POST form fields (JSON object)" : "POST body template (JSON)";
+		};
+		methodSelect?.addEventListener("change", updateVisibility);
+		encodingSelect?.addEventListener("change", updateVisibility);
+		authTypeSelect?.addEventListener("change", updateVisibility);
+		updateVisibility();
 	</script>
 }

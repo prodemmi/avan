@@ -45,6 +45,7 @@ func (s SettingService) CreateDefaultSettings(workspaceID int64) {
 	timezone := "UTC"
 	adminEmail := admin.Email
 	logDir := s.Repo.Base.Config.LogsDirectory
+	apiSecurityPolicy := "{}"
 
 	settings := []sqlc.Setting{
 		sqlc.Setting{
@@ -66,6 +67,10 @@ func (s SettingService) CreateDefaultSettings(workspaceID int64) {
 		sqlc.Setting{
 			Key:   "log-dir",
 			Value: &logDir,
+		},
+		sqlc.Setting{
+			Key:   APISecurityPolicySettingKey,
+			Value: &apiSecurityPolicy,
 		},
 	}
 	fmt.Println("settings", settings)

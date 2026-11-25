@@ -24,6 +24,34 @@ INSERT INTO messages (workspace_id,
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING id::BIGINT;
 
+-- name: CreateIdempotentMessagePostgresql :one
+INSERT INTO messages (workspace_id,
+                      provider_id,
+                      template_id,
+                      recipient,
+                      content,
+                      status,
+                      error,
+                      retry,
+                      schedule_at,
+                      sent_at,
+                      payload,
+                      idempotency_key,
+                      request_hash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+ON CONFLICT (workspace_id, idempotency_key) DO NOTHING
+RETURNING *;
+
+-- name: GetMessageByIdempotencyKeyPostgresql :one
+SELECT * FROM messages
+WHERE workspace_id = $1 AND idempotency_key = $2
+LIMIT 1;
+
+-- name: GetMessageStatusForWorkspacePostgresql :one
+SELECT id, status, schedule_at, sent_at, created_at FROM messages
+WHERE id = $1 AND workspace_id = $2
+LIMIT 1;
+
 -- name: MessageCountPostgresql :one
 SELECT COUNT(*)
 FROM messages

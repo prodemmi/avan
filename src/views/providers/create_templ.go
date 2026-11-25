@@ -13,9 +13,10 @@ import (
 	"avan/views/components"
 	"avan/views/providers/create_config_forms"
 	"fmt"
+	"strings"
 )
 
-func Create(configType string) templ.Component {
+func Create(configType string, mode string, template ProviderTemplate) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -32,6 +33,8 @@ func Create(configType string) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
+		priority := int64(0)
+		weight := int64(1)
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"provider-form-page\"><a class=\"provider-back-link\" href=\"/dashboard/providers/\">← Back to providers</a><div class=\"provider-form-heading\"><span class=\"provider-form-icon\"><i class=\"ri-plug-2-line\" aria-hidden=\"true\"></i></span><div><span class=\"admin-eyebrow\">NEW INTEGRATION</span><h1>Create provider</h1><p>Connect a service to deliver messages from this workspace.</p></div></div><form class=\"provider-config-form\" action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -39,41 +42,248 @@ func Create(configType string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.URL(fmt.Sprintf("/dashboard/providers/create/%s", configType))).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 16, Col: 114}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 18, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" method=\"POST\"><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">1</span><div><h2>Provider details</h2><p>Give this connection a recognizable name and choose its channel.</p></div></div><div class=\"provider-fields\"><div class=\"provider-field\"><label for=\"name\">Provider name</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" method=\"POST\"><input type=\"hidden\" name=\"mode\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.Input("name", "Enter provider name", "").Render(ctx, templ_7745c5c3_Buffer)
+		var templ_7745c5c3_Var3 string
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(mode).Resolve(ctx)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 19, Col: 48}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p>Use a short name your team will recognize.</p></div><div class=\"provider-field\"><label for=\"type\">Channel</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"> <input type=\"hidden\" name=\"template\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		options := []components.SelectOption{{Value: "sms", Label: "Sms"}, {Value: "email", Label: "Email"}, {Value: "telegram", Label: "Telegram"}, {Value: "slack", Label: "Slack"}, {Value: "webhook", Label: "Webhook"}}
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(template.ID).Resolve(ctx)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 20, Col: 59}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><section class=\"provider-form-card\" data-wizard-step=\"1\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">1</span><div><h2>Choose a setup mode</h2><p>Start blank or use a documented service template.</p></div></div><div class=\"provider-fields\"><div class=\"provider-field\"><label for=\"provider-mode\">Configuration mode</label> <select id=\"provider-mode\" aria-label=\"Configuration mode\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if mode == "template" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<option value=\"blank\">Blank configuration</option> <option value=\"template\" selected>Use a template</option>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<option value=\"blank\" selected>Blank configuration</option> <option value=\"template\">Use a template</option>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</select></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if mode == "template" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"provider-field\"><label for=\"provider-template\">Provider template</label> <select id=\"provider-template\"><option value=\"\">Choose a service</option> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			for _, option := range AllProviderTemplates() {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<option value=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var5 string
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(option.ID).Resolve(ctx)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 42, Col: 34}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\" data-type=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var6 string
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(option.ConfigType).Resolve(ctx)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 42, Col: 66}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				if option.ID == template.ID {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " selected")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, ">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var7 string
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(option.Region)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 42, Col: 123}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, " · ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var8 string
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(option.Name)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 42, Col: 142}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</option>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</select></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		if template.ID != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"provider-field provider-field-wide\"><strong>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var9 string
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(template.Name)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 49, Col: 30}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</strong><p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var10 string
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(template.Description)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 50, Col: 32}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</p><p>Required: ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var11 string
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(strings.Join(template.RequiredFields, ", "))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 51, Col: 65}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if template.Documentation != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var12 string
+				templ_7745c5c3_Var12, templ_7745c5c3_Err = templruntime.NewAttributeExpression(template.Documentation).ResolveURL(ctx)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/providers/create.templ`, Line: 53, Col: 40}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\" target=\"_blank\" rel=\"noopener noreferrer\">Official provider documentation</a>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></section><section class=\"provider-form-card\" data-wizard-step=\"2\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">2</span><div><h2>Provider details</h2><p>Name this connection, choose its channel, and set its failover order.</p></div></div><div class=\"provider-fields\"><div class=\"provider-field\"><label for=\"name\">Provider name</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.Input("name", "Enter provider name", template.Name).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<p>Use a short name your team will recognize.</p></div><div class=\"provider-field\"><label for=\"type\">Channel</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		options := []components.SelectOption{{Value: "sms", Label: "SMS"}, {Value: "email", Label: "Email"}, {Value: "telegram", Label: "Telegram"}, {Value: "slack", Label: "Slack"}, {Value: "webhook", Label: "Webhook"}}
 		templ_7745c5c3_Err = components.Select("type", options, configType).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div></section><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">2</span><div><h2>Connection settings</h2><p>Enter the credentials and endpoint for this provider.</p></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</div><div class=\"provider-field\"><label for=\"priority\">Failover priority</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.NumberInput("priority", "0", &priority).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<p>Lower values are tried first after the selected provider fails.</p></div><div class=\"provider-field\"><label for=\"weight\">Failover weight</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.NumberInput("weight", "1", &weight).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<p>Higher weight is more likely to be tried first among equal-priority backups.</p></div></div></section><section class=\"provider-form-card\" data-wizard-step=\"3\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\">3</span><div><h2>Connection settings</h2><p>Enter required credentials and endpoints. Secret values are never prefilled.</p></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		switch configType {
 		case "sms":
-			templ_7745c5c3_Err = create_config_forms.SmsForm().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = create_config_forms.SmsForm(template.URL, template.Method, template.AuthKey, template.AuthType, template.BodyEncoding, template.BodySchema).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "email":
-			templ_7745c5c3_Err = create_config_forms.EmailForm().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = create_config_forms.EmailForm(template.SMTPHost, template.SMTPPort, template.SMTPUsername).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -83,17 +293,17 @@ func Create(configType string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		case "slack":
-			templ_7745c5c3_Err = create_config_forms.SlackForm().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = create_config_forms.SlackForm(template.URL).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "webhook":
-			templ_7745c5c3_Err = create_config_forms.WebhookForm().Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = create_config_forms.WebhookForm(template.URL).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</section><div class=\"provider-form-actions\"><a class=\"provider-cancel-button\" href=\"/dashboard/providers/\">Cancel</a> <button class=\"provider-save-button\" type=\"submit\"><i class=\"ri-check-line\" aria-hidden=\"true\"></i>Create provider</button></div></form></div><script>\n        const typeValue = document.querySelector(\"[name=type]\");\n        typeValue?.addEventListener(\"change\", (event) => {\n            location.href = \"/dashboard/providers/create/\" + event.target.value;\n        });\n    </script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</section><div class=\"provider-form-actions\"><a class=\"provider-cancel-button\" href=\"/dashboard/providers/\">Cancel</a> <button class=\"provider-cancel-button\" type=\"button\" id=\"wizard-back\">Back</button> <button class=\"provider-save-button\" type=\"button\" id=\"wizard-next\">Continue</button> <button class=\"provider-save-button\" type=\"submit\" id=\"wizard-submit\"><i class=\"ri-check-line\" aria-hidden=\"true\"></i>Create provider</button></div></form></div><script>\n\t\tconst modeSelect = document.getElementById(\"provider-mode\");\n\t\tconst templateSelect = document.getElementById(\"provider-template\");\n\t\tconst typeSelect = document.querySelector(\"[name=type]\");\n\t\tconst panels = [...document.querySelectorAll(\"[data-wizard-step]\")];\n\t\tconst back = document.getElementById(\"wizard-back\");\n\t\tconst next = document.getElementById(\"wizard-next\");\n\t\tconst submit = document.getElementById(\"wizard-submit\");\n\t\tlet step = 1;\n\t\tconst showStep = () => {\n\t\t\tpanels.forEach((panel) => panel.hidden = Number(panel.dataset.wizardStep) !== step);\n\t\t\tback.hidden = step === 1;\n\t\t\tnext.hidden = step === panels.length;\n\t\t\tsubmit.hidden = step !== panels.length;\n\t\t};\n\t\tconst openSelection = (type, mode, template) => {\n\t\t\tconst query = new URLSearchParams({ mode });\n\t\t\tif (template) query.set(\"template\", template);\n\t\t\tlocation.href = \"/dashboard/providers/create/\" + type + \"?\" + query.toString();\n\t\t};\n\t\tmodeSelect?.addEventListener(\"change\", () => openSelection(typeSelect.value, modeSelect.value, \"\"));\n\t\ttemplateSelect?.addEventListener(\"change\", () => {\n\t\t\tconst option = templateSelect.options[templateSelect.selectedIndex];\n\t\t\tif (option?.value) openSelection(option.dataset.type, \"template\", option.value);\n\t\t});\n\t\ttypeSelect?.addEventListener(\"change\", () => openSelection(typeSelect.value, modeSelect.value, \"\"));\n\t\tnext?.addEventListener(\"click\", () => {\n\t\t\tif (step === 1 && modeSelect.value === \"template\" && !templateSelect?.value) {\n\t\t\t\ttemplateSelect?.focus();\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tstep = Math.min(step + 1, panels.length);\n\t\t\tshowStep();\n\t\t});\n\t\tback?.addEventListener(\"click\", () => { step = Math.max(step - 1, 1); showStep(); });\n\t\tshowStep();\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

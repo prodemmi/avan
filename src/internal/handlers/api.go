@@ -5,9 +5,14 @@ import (
 	"avan/internal/dto"
 	"avan/internal/notifiers"
 	"avan/internal/services"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -30,6 +35,11 @@ type SendBody struct {
 }
 
 func (a ApiHandler) Send(c *gin.Context) {
+	idempotencyKey, ok := requestIdempotencyKey(c)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "a valid Idempotency-Key header is required"})
+		return
+	}
 	var body SendBody
 	err := c.ShouldBindJSON(&body)
 	if err != nil {
@@ -75,15 +85,25 @@ func (a ApiHandler) Send(c *gin.Context) {
 		payload = &p
 	}
 
-	if err := a.ApiService.Send(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, body.Retry, body.ScheduleAt, payload); err != nil {
+	requestHash := sendRequestHash(body, message, payload)
+	result, created, err := a.ApiService.Send(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, body.Retry, body.ScheduleAt, payload, idempotencyKey, requestHash)
+	if errors.Is(err, services.ErrIdempotencyKeyConflict) {
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": err.Error()})
+		return
+	}
+	if err != nil {
 		SendError(c, err)
 		return
 	}
-
-	SendSuccess(c, "message added to the queue")
+	writeSendResult(c, result, !created)
 }
 
 func (a ApiHandler) QuickSend(c *gin.Context) {
+	idempotencyKey, ok := requestIdempotencyKey(c)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "a valid Idempotency-Key header is required"})
+		return
+	}
 	var body SendBody
 	err := c.ShouldBindJSON(&body)
 	if err != nil {
@@ -128,45 +148,45 @@ func (a ApiHandler) QuickSend(c *gin.Context) {
 		p := string(pay)
 		payload = &p
 	}
+	requestHash := sendRequestHash(body, message, payload)
 	if body.ScheduleAt != nil && body.ScheduleAt.After(time.Now()) {
-		if err := a.ApiService.Send(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, body.Retry, body.ScheduleAt, payload); err != nil {
+		result, created, err := a.ApiService.Send(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, body.Retry, body.ScheduleAt, payload, idempotencyKey, requestHash)
+		if errors.Is(err, services.ErrIdempotencyKeyConflict) {
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+		if err != nil {
 			SendError(c, err)
 			return
 		}
-		SendSuccess(c, "message scheduled")
+		writeSendResult(c, result, !created)
 		return
 	}
 
-	id, err := a.MessageService.CreateMessage(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, 1, nil, body.Retry, nil, nil, payload)
+	msg, created, err := a.MessageService.CreateIdempotentMessage(workspaceID, body.ProviderID, body.TemplateID, body.Recipient, message, body.Retry, nil, payload, idempotencyKey, requestHash)
+	if errors.Is(err, services.ErrIdempotencyKeyConflict) {
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": err.Error()})
+		return
+	}
 	if err != nil {
 		SendError(c, err)
 		return
 	}
-
-	now := time.Now()
-	msg := sqlc.Message{
-		ID:          id,
-		WorkspaceID: workspaceID,
-		ProviderID:  body.ProviderID,
-		TemplateID:  body.TemplateID,
-		Recipient:   body.Recipient,
-		Content:     message,
-		Status:      1,
-		Retry:       body.Retry,
-		ScheduleAt:  nil,
-		Payload:     payload,
-		SentAt:      nil,
-		CreatedAt:   &now,
-		UpdatedAt:   &now,
+	if !created {
+		writeSendResult(c, msg, true)
+		return
 	}
 
-	err = notifiers.SendWithRetry(func() error { return a.Notifier.SendMessage(provider, msg) }, body.Retry)
+	err = a.Notifier.SendWithFailover(provider, msg, body.Retry)
 	if err == nil {
 		if err := a.MessageService.MarkMessageAsSuccess(msg.ID); err != nil {
 			SendError(c, err)
 			return
 		}
-		SendSuccess(c, "message sent quickly")
+		msg.Status = 0
+		sentAt := time.Now()
+		msg.SentAt = &sentAt
+		writeSendResult(c, msg, false)
 		return
 	}
 
@@ -180,11 +200,88 @@ func (a ApiHandler) QuickSend(c *gin.Context) {
 		return
 	}
 	if err := a.MessageService.ProduceMessageDirectly(msg.ProviderID, msg.ID); err != nil {
+		_ = a.MessageService.MarkMessageAsError(msg.ID)
 		SendError(c, err)
 		return
 	}
 
-	SendSuccess(c, "message added to the queue")
+	writeSendResult(c, msg, false)
+}
+
+func (a ApiHandler) Inquiry(c *gin.Context) {
+	messageID, err := ConvertToInt64(c.Param("id"))
+	if err != nil || messageID <= 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid message ID"})
+		return
+	}
+	message, err := a.MessageService.GetMessageForWorkspace(messageID, GetWorkspaceIDFromContext(c))
+	if errors.Is(err, sql.ErrNoRows) {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "message not found"})
+		return
+	}
+	if err != nil {
+		SendError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{
+		"id":           message.ID,
+		"status":       messageStatusName(message.Status, message.ScheduleAt),
+		"created_at":   message.CreatedAt,
+		"scheduled_at": message.ScheduleAt,
+		"sent_at":      message.SentAt,
+	}})
+}
+
+func requestIdempotencyKey(c *gin.Context) (string, bool) {
+	key := strings.TrimSpace(c.GetHeader("Idempotency-Key"))
+	return key, key != "" && len(key) <= 255
+}
+
+func sendRequestHash(body SendBody, content string, payload *string) string {
+	request, _ := json.Marshal(struct {
+		ProviderID int64      `json:"provider_id"`
+		TemplateID *int64     `json:"template_id"`
+		Recipient  string     `json:"recipient"`
+		Message    string     `json:"message"`
+		Retry      bool       `json:"retry"`
+		ScheduleAt *time.Time `json:"schedule_at"`
+		Payload    *string    `json:"payload"`
+	}{body.ProviderID, body.TemplateID, body.Recipient, content, body.Retry, body.ScheduleAt, payload})
+	hash := sha256.Sum256(request)
+	return hex.EncodeToString(hash[:])
+}
+
+func writeSendResult(c *gin.Context, message sqlc.Message, duplicate bool) {
+	status := messageStatusName(message.Status, message.ScheduleAt)
+	statusCode := http.StatusOK
+	if status == "pending" || status == "scheduled" {
+		statusCode = http.StatusAccepted
+	} else if status == "failed" {
+		statusCode = http.StatusBadGateway
+	}
+	c.JSON(statusCode, gin.H{"data": gin.H{
+		"message_id":   message.ID,
+		"status":       status,
+		"duplicate":    duplicate,
+		"scheduled_at": message.ScheduleAt,
+		"sent_at":      message.SentAt,
+	}})
+}
+
+func messageStatusName(status int64, scheduleAt *time.Time) string {
+	switch status {
+	case 0:
+		return "sent"
+	case 1:
+		if scheduleAt != nil {
+			return "scheduled"
+		}
+		return "pending"
+	case 2:
+		return "failed"
+	default:
+		return "unknown"
+	}
 }
 
 func NewApiHandler(authService services.ApiService, messageService services.MessageService, notifier notifiers.Notifier, providerService services.ProviderService) ApiHandler {

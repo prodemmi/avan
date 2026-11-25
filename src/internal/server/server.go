@@ -27,5 +27,8 @@ func (s Server) Start() {
 func NewServer(config config.Config, logger zap.Logger) Server {
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.Default()
+	if err := engine.SetTrustedProxies(nil); err != nil {
+		panic(err)
+	}
 	return Server{Config: config, Engine: engine, Logger: logger}
 }

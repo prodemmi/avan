@@ -2,8 +2,8 @@ package create_config_forms
 
 import "avan/views/components"
 
-templ WebhookForm() {
+templ WebhookForm(url string) {
 	<div class="provider-fields">
-		<div class="provider-field provider-field-wide"><label for="webhook_url">Webhook URL</label>@components.UrlInput("webhook_url", "https://example.com/webhook", "")<p>Avan sends this endpoint a JSON request when a message is queued.</p></div>
+		<div class="provider-field provider-field-wide"><label for="webhook_url">Webhook URL</label>@components.UrlInput("webhook_url", "https://example.com/webhook", url)<p>Avan sends this endpoint a JSON request when a message is queued.</p></div>
 	</div>
 }

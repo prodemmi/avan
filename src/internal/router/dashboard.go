@@ -37,19 +37,13 @@ func (r Router) GenerateDashboardRoutes() {
 	developerRoutes.GET("/openapi.json", r.developerOpenAPI)
 	dashboard.GET("/switch-workspace", func(c *gin.Context) {
 		id, err := handlers.ConvertToInt64(c.Query("workspace-id"))
-		workspaces, ok := c.Get("workspaces")
-		if err != nil || !ok {
+		workspaceValue, ok := c.Get("workspaces")
+		workspaces, valid := workspaceValue.([]sqlc.Workspace)
+		if err != nil || id <= 0 || !ok || !valid {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		allowed := false
-		for _, workspace := range workspaces.([]sqlc.Workspace) {
-			if workspace.ID == id {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
+		if !workspaceAllowed(workspaces, id) {
 			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
@@ -68,6 +62,15 @@ func (r Router) GenerateDashboardRoutes() {
 	r.GenerateMessageRoutes(dashboard)
 	r.GenerateAnalysisRoutes(dashboard)
 	r.GenerateSettingsRoutes(dashboard)
+}
+
+func workspaceAllowed(workspaces []sqlc.Workspace, id int64) bool {
+	for _, workspace := range workspaces {
+		if workspace.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (r Router) selectedDeveloperWorkspace(c *gin.Context) ([]sqlc.Workspace, sqlc.Workspace, error) {
@@ -165,34 +168,50 @@ func (r Router) developerOpenAPI(c *gin.Context) {
 	success := gin.H{"$ref": "#/components/schemas/Success"}
 	failure := gin.H{"$ref": "#/components/schemas/Error"}
 	messageOperation := func(quick bool) gin.H {
-		queued := "message added to the queue"
+		statusExample := "pending"
 		if quick {
-			queued = "message sent quickly"
+			statusExample = "sent"
 		}
 		return gin.H{
 			"security":    []gin.H{{"ApiKey": []string{}}},
+			"parameters":  []gin.H{{"name": "Idempotency-Key", "in": "header", "required": true, "schema": gin.H{"type": "string", "maxLength": 255}, "description": "Unique per logical send within this workspace. Reuse it only for retries of the same request."}},
 			"requestBody": gin.H{"required": true, "content": gin.H{"application/json": gin.H{"schema": requestSchema, "example": gin.H{"provider_id": providerID, "recipient": "+989120000000", "message": "Hello", "retry": true, "schedule_at": "2026-12-01T09:30:00Z", "payload": gin.H{"campaign": "welcome"}}}}},
 			"responses": gin.H{
-				"200": response("Message accepted. Quick send can also return a queued message after provider retries fail.", success, gin.H{"data": queued}),
-				"400": response("Malformed JSON, missing fields/message, or invalid template data.", failure, gin.H{"error": "message or template_id is required"}),
+				"200": response("Send completed. The data includes message_id, status, and duplicate.", success, gin.H{"data": gin.H{"message_id": 123, "status": statusExample, "duplicate": false}}),
+				"202": response("Message is pending or scheduled. Duplicate requests return the existing state and message ID without sending again.", success, gin.H{"data": gin.H{"message_id": 123, "status": "pending", "duplicate": true}}),
+				"400": response("Malformed JSON, missing fields/message, invalid template data, or missing Idempotency-Key.", failure, gin.H{"error": "a valid Idempotency-Key header is required"}),
 				"401": response("Missing, invalid, or expired API key.", failure, gin.H{"error": "invalid or expired API key"}),
+				"403": response("Workspace IP or API-key policy denied the request.", failure, gin.H{"error": "request rejected by workspace security policy"}),
+				"409": response("The Idempotency-Key was already used with a different request.", failure, gin.H{"error": "idempotency key was already used with a different request"}),
+				"502": response("The existing idempotent message has failed; it will not be sent again by replaying this key.", success, gin.H{"data": gin.H{"message_id": 123, "status": "failed", "duplicate": true}}),
 				"500": response("Provider, database, or queue failure.", failure, gin.H{"error": "description"}),
 			},
 		}
+	}
+	inquiryOperation := gin.H{
+		"security":   []gin.H{{"ApiKey": []string{}}},
+		"parameters": []gin.H{{"name": "id", "in": "path", "required": true, "schema": gin.H{"type": "integer", "format": "int64"}}},
+		"responses": gin.H{
+			"200": response("Workspace-scoped message lifecycle status. This service reports pending, scheduled, sent, or failed; delivered/read are unavailable without provider callbacks.", success, gin.H{"data": gin.H{"id": 123, "status": "sent", "created_at": "2026-12-01T09:30:00Z", "sent_at": "2026-12-01T09:30:02Z"}}),
+			"401": response("Missing, invalid, or expired API key.", failure, gin.H{"error": "invalid or expired API key"}),
+			"403": response("Workspace IP or API-key policy denied the request.", failure, gin.H{"error": "request rejected by workspace security policy"}),
+			"404": response("Message does not exist in the API key's workspace.", failure, gin.H{"error": "message not found"}),
+		},
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"openapi": "3.0.3",
 		"info":    gin.H{"title": "Avan API", "version": "1.0.0", "description": fmt.Sprintf("API reference for workspace %s using provider %s (ID %d).", selected.Name, selectedProvider.Name, selectedProvider.ID)},
 		"servers": []gin.H{{"url": "/"}},
 		"paths": gin.H{
-			"/api/send":       gin.H{"post": messageOperation(false)},
-			"/api/quick-send": gin.H{"post": messageOperation(true)},
-			"/health":         gin.H{"get": gin.H{"summary": "Service health", "responses": gin.H{"200": response("Service is running.", gin.H{"type": "object", "properties": gin.H{"status": gin.H{"type": "string"}}}, gin.H{"status": "ok"})}}},
+			"/api/send":          gin.H{"post": messageOperation(false)},
+			"/api/quick-send":    gin.H{"post": messageOperation(true)},
+			"/api/messages/{id}": gin.H{"get": inquiryOperation},
+			"/health":            gin.H{"get": gin.H{"summary": "Service health", "responses": gin.H{"200": response("Service is running.", gin.H{"type": "object", "properties": gin.H{"status": gin.H{"type": "string"}}}, gin.H{"status": "ok"})}}},
 		},
 		"components": gin.H{
 			"securitySchemes": gin.H{"ApiKey": gin.H{"type": "apiKey", "in": "header", "name": "X-API-KEY"}},
 			"schemas": gin.H{
-				"Success": gin.H{"type": "object", "required": []string{"data"}, "properties": gin.H{"data": gin.H{"type": "string"}}},
+				"Success": gin.H{"type": "object", "required": []string{"data"}, "properties": gin.H{"data": gin.H{"type": "object", "additionalProperties": true}}},
 				"Error":   gin.H{"type": "object", "required": []string{"error"}, "properties": gin.H{"error": gin.H{"type": "string"}}},
 			},
 		},

@@ -14,17 +14,6 @@ templ SidebarItem(title string, url string, icon string) {
 	</a>
 }
 
-templ WorkspaceSwitcher(workspaces []sqlc.Workspace, selected sqlc.Workspace) {
-	<form class="workspace-switcher" action="/dashboard/switch-workspace" method="GET">
-		<label class="sr-only" for="active-workspace">Workspace</label>
-		<select id="active-workspace" name="workspace-id" aria-label="Workspace" onchange="this.form.requestSubmit()">
-			for _, workspace := range workspaces {
-				<option value={ fmt.Sprint(workspace.ID) } selected?={ workspace.ID == selected.ID }>{ workspace.Name }</option>
-			}
-		</select>
-	</form>
-}
-
 templ Sidebar() {
 	{{ primaryColor := safePrimaryColor(ctx.Value("primaryColor").(string))}}
 

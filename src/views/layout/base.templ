@@ -25,6 +25,17 @@ func primaryColorStyle(color string) string {
 	return fmt.Sprintf("--avan-primary:%s;--avan-primary-contrast:%s;--color-primary:%s;--color-primary-50:color-mix(in srgb,%s 7%%,white);--color-primary-100:color-mix(in srgb,%s 14%%,white);--color-primary-200:color-mix(in srgb,%s 28%%,white);--color-primary-300:color-mix(in srgb,%s 42%%,white);--color-primary-400:color-mix(in srgb,%s 68%%,white);--color-primary-500:%s;--color-primary-600:color-mix(in srgb,%s 90%%,black);--color-primary-700:color-mix(in srgb,%s 78%%,black);--color-primary-800:color-mix(in srgb,%s 65%%,black);--color-primary-900:color-mix(in srgb,%s 52%%,black);--color-primary-950:color-mix(in srgb,%s 36%%,black)", color, primaryColorContrast(color), color, color, color, color, color, color, color, color, color, color, color, color)
 }
 
+templ WorkspaceSwitcher(workspaces []sqlc.Workspace, selected sqlc.Workspace) {
+	<form class="workspace-switcher" action="/dashboard/switch-workspace" method="GET">
+		<label class="sr-only" for="active-workspace">Workspace</label>
+		<select id="active-workspace" name="workspace-id" aria-label="Workspace" onchange="this.form.requestSubmit()">
+			for _, workspace := range workspaces {
+				<option value={ fmt.Sprint(workspace.ID) } selected?={ workspace.ID == selected.ID }>{ workspace.Name }</option>
+			}
+		</select>
+	</form>
+}
+
 templ Layout(content templ.Component, baseMenu string, menuItems []MenuItem) {
 	{{ theme := ctx.Value("theme").(string)}}
 	{{ primaryColor := safePrimaryColor(ctx.Value("primaryColor").(string)) }}

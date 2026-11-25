@@ -9,6 +9,7 @@ func (r Router) GenerateUserRoutes(group *gin.RouterGroup) {
 	users.GET("", r.UserHandler.Index)
 	users.POST("/roles", r.UserHandler.SaveRole)
 	users.POST("/roles/:id", r.UserHandler.SaveRole)
+	users.POST("/roles/:id/delete", r.UserHandler.DeleteRole)
 	users.POST("/:id/role", r.UserHandler.AssignRole)
 	users.POST("/:id/workspaces", r.UserHandler.AssignWorkspaces)
 	users.POST("/:id/edit", r.UserHandler.Update)

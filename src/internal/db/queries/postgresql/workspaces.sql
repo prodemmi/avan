@@ -38,7 +38,8 @@ SELECT workspaces.id,
        workspaces.name,
        workspaces.is_default,
        workspaces.created_at,
-       workspaces.updated_at
+       workspaces.updated_at,
+       workspaces.business_id
 FROM workspaces
          LEFT JOIN api_keys ON workspaces.id = api_keys.workspace_id
 WHERE api_keys.api_key = $1

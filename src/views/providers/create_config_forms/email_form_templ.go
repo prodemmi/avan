@@ -9,9 +9,12 @@ package create_config_forms
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "avan/views/components"
+import (
+	"avan/views/components"
+	"strconv"
+)
 
-func EmailForm() templ.Component {
+func EmailForm(host string, port string, username string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -28,11 +31,15 @@ func EmailForm() templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
+		var portValue *int64
+		if parsed, err := strconv.ParseInt(port, 10, 64); err == nil {
+			portValue = &parsed
+		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"provider-fields\"><div class=\"provider-field\"><label for=\"smtp_host\">SMTP host</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.Input("smtp_host", "smtp.example.com", "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Input("smtp_host", "smtp.example.com", host).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -40,7 +47,7 @@ func EmailForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.NumberInput("smtp_port", "587", nil).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.NumberInput("smtp_port", "587", portValue).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -48,7 +55,7 @@ func EmailForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.OptionalInput("username", "SMTP username", "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.OptionalInput("username", "SMTP username", username).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

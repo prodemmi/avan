@@ -128,6 +128,20 @@ func (w UserHandler) SaveRole(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/dashboard/users")
 }
 
+func (w UserHandler) DeleteRole(c *gin.Context) {
+	roleID, err := ConvertToInt64(c.Param("id"))
+	if err != nil || roleID <= 0 {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	if err := w.UserService.DeleteRole(c.Request.Context(), GetWorkspaceIDFromContext(c), roleID); err != nil {
+		c = ContextWithError(c, err.Error())
+		w.Index(c)
+		return
+	}
+	c.Redirect(http.StatusSeeOther, "/dashboard/users")
+}
+
 func (w UserHandler) AssignRole(c *gin.Context) {
 	userID, err := ConvertToInt64(c.Param("id"))
 	roleID, roleErr := ConvertToInt64(c.PostForm("role_id"))

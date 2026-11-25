@@ -29,7 +29,7 @@ func replacePlaceholders(template string, replacements map[string]string) string
 	return template
 }
 
-func buildSmsPostBody(bodySchema string, message sqlc.Message, authKey, authValue *string, includeAuth bool) ([]byte, error) {
+func buildSmsPostFields(bodySchema string, message sqlc.Message, authKey, authValue *string, includeAuth bool, replacements map[string]string) (map[string]any, error) {
 	var payload any
 	if message.Payload != nil {
 		if err := json.Unmarshal([]byte(*message.Payload), &payload); err != nil {
@@ -92,6 +92,9 @@ func buildSmsPostBody(bodySchema string, message sqlc.Message, authKey, authValu
 				if message.ScheduleAt != nil {
 					value = strings.ReplaceAll(value, "$schedule_at", message.ScheduleAt.Format(time.RFC3339))
 				}
+				for key, replacement := range replacements {
+					value = strings.ReplaceAll(value, "$"+key, replacement)
+				}
 				return value
 			default:
 				return value
@@ -106,11 +109,140 @@ func buildSmsPostBody(bodySchema string, message sqlc.Message, authKey, authValu
 	if includeAuth && authKey != nil && authValue != nil {
 		object[*authKey] = *authValue
 	}
+	return object, nil
+}
+
+func buildSmsPostBody(bodySchema string, message sqlc.Message, authKey, authValue *string, includeAuth bool) ([]byte, error) {
+	object, err := buildSmsPostFields(bodySchema, message, authKey, authValue, includeAuth, nil)
+	if err != nil {
+		return nil, err
+	}
 	encoded, err := json.Marshal(object)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal payload: %w", err)
 	}
 	return encoded, nil
+}
+
+func buildSmsRequestBody(bodySchema string, message sqlc.Message, authKey, authValue *string, includeAuth bool, replacements map[string]string, encoding string) ([]byte, string, error) {
+	object, err := buildSmsPostFields(bodySchema, message, authKey, authValue, includeAuth, replacements)
+	if err != nil {
+		return nil, "", err
+	}
+	if encoding == "" || encoding == "json" {
+		body, err := json.Marshal(object)
+		return body, "application/json", err
+	}
+	if encoding != "form" {
+		return nil, "", errors.New("unsupported SMS POST body encoding")
+	}
+	values := make(url.Values, len(object))
+	for key, value := range object {
+		if value == nil {
+			continue
+		}
+		if text, ok := value.(string); ok {
+			values.Set(key, text)
+			continue
+		}
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to encode form field %q: %w", key, err)
+		}
+		values.Set(key, string(encoded))
+	}
+	return []byte(values.Encode()), "application/x-www-form-urlencoded", nil
+}
+
+func buildSmsRequest(config sqlc.SmsConfig, message sqlc.Message) (*http.Request, error) {
+	replacements := map[string]string{"message": message.Content, "send_to": message.Recipient}
+	if config.AuthUsername != nil {
+		replacements["username"] = *config.AuthUsername
+	}
+	if config.AccountSid != nil {
+		replacements["account_sid"] = url.PathEscape(*config.AccountSid)
+	}
+	if config.Sender != nil {
+		replacements["sender"] = *config.Sender
+	}
+	requestURL := replacePlaceholders(config.Url, replacements)
+	authType := config.AuthType
+	if authType == "" {
+		authType = "token"
+	}
+	if authType != "token" && authType != "basic" {
+		return nil, errors.New("unsupported SMS authentication type")
+	}
+	inHeader := config.IsAuthInHeader != nil && *config.IsAuthInHeader
+	var req *http.Request
+	var err error
+	switch config.Method {
+	case MethodGET:
+		if authType == "token" && !inHeader && config.AuthTokenKey != nil && config.AuthTokenValue != nil {
+			key, value := *config.AuthTokenKey, *config.AuthTokenValue
+			if strings.Contains(config.Url, "$"+key) {
+				requestURL = replacePlaceholders(requestURL, map[string]string{key: value})
+			} else {
+				u, parseErr := url.Parse(requestURL)
+				if parseErr != nil {
+					return nil, fmt.Errorf("failed to parse URL: %w", parseErr)
+				}
+				query := u.Query()
+				query.Set(key, value)
+				u.RawQuery = query.Encode()
+				requestURL = u.String()
+			}
+		}
+		req, err = http.NewRequest(http.MethodGet, requestURL, nil)
+	case MethodPOST:
+		encoding := config.BodyEncoding
+		if encoding == "" {
+			encoding = "json"
+		}
+		bodySchema := ""
+		if config.BodySchema != nil {
+			bodySchema = *config.BodySchema
+		}
+		includeAuth := authType == "token" && !inHeader
+		var body []byte
+		var contentType string
+		body, contentType, err = buildSmsRequestBody(bodySchema, message, config.AuthTokenKey, config.AuthTokenValue, includeAuth, replacements, encoding)
+		if err == nil {
+			req, err = http.NewRequest(http.MethodPost, requestURL, bytes.NewReader(body))
+			if err == nil {
+				req.Header.Set("Content-Type", contentType)
+			}
+		}
+	default:
+		return nil, errors.New("unsupported SMS method type")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to build SMS request: %w", err)
+	}
+	if authType == "basic" {
+		if config.AuthUsername == nil || config.AuthTokenValue == nil || *config.AuthUsername == "" || *config.AuthTokenValue == "" {
+			return nil, errors.New("HTTP Basic username and password are required")
+		}
+		req.SetBasicAuth(*config.AuthUsername, *config.AuthTokenValue)
+	} else if inHeader && config.AuthTokenKey != nil && config.AuthTokenValue != nil {
+		req.Header.Set(*config.AuthTokenKey, *config.AuthTokenValue)
+	}
+	return req, nil
+}
+
+func smsResponseError(requestURL string, statusCode int, body []byte) error {
+	if statusCode < http.StatusOK || statusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("failed to send SMS, status: %d, response: %s", statusCode, body)
+	}
+	u, err := url.Parse(requestURL)
+	if err != nil || !strings.EqualFold(u.Hostname(), "rest.payamak-panel.com") || u.Path != "/api/SendSMS/SendSMS" {
+		return nil
+	}
+	returnValue, err := strconv.Atoi(strings.Trim(strings.TrimSpace(string(body)), `"`))
+	if err != nil || returnValue <= 0 {
+		return fmt.Errorf("Melipayamak rejected SMS, response: %s", body)
+	}
+	return nil
 }
 
 // HandleSmsNotifier processes and sends SMS notifications
@@ -119,57 +251,9 @@ func (n Notifier) HandleSmsNotifier(provider sqlc.Provider, message sqlc.Message
 	if err != nil {
 		return fmt.Errorf("failed to get sms config: %w", err)
 	}
-	inHeader := smsConfig.IsAuthInHeader != nil && *smsConfig.IsAuthInHeader
-
-	var req *http.Request
-	if smsConfig.Method == MethodGET {
-		replaces := map[string]string{
-			"message": message.Content,
-			"send_to": message.Recipient,
-		}
-
-		encodedUrl := replacePlaceholders(smsConfig.Url, replaces)
-
-		if !inHeader && smsConfig.AuthTokenKey != nil && smsConfig.AuthTokenValue != nil {
-			encodedUrl = replacePlaceholders(encodedUrl, map[string]string{*smsConfig.AuthTokenKey: *smsConfig.AuthTokenValue})
-
-			if encodedUrl == smsConfig.Url {
-				u, err := url.Parse(encodedUrl)
-				if err != nil {
-					return fmt.Errorf("failed to parse URL: %w", err)
-				}
-				query := u.Query()
-				query.Set(*smsConfig.AuthTokenKey, *smsConfig.AuthTokenValue)
-				u.RawQuery = query.Encode()
-				encodedUrl = u.String()
-			}
-		}
-
-		req, err = http.NewRequest("GET", encodedUrl, nil)
-		if err != nil {
-			return fmt.Errorf("failed to create GET request: %w", err)
-		}
-	} else if smsConfig.Method == MethodPOST {
-		bodySchema := ""
-		if smsConfig.BodySchema != nil {
-			bodySchema = *smsConfig.BodySchema
-		}
-		payload, err := buildSmsPostBody(bodySchema, message, smsConfig.AuthTokenKey, smsConfig.AuthTokenValue, !inHeader)
-		if err != nil {
-			return err
-		}
-
-		req, err = http.NewRequest("POST", smsConfig.Url, bytes.NewBuffer(payload))
-		if err != nil {
-			return fmt.Errorf("failed to create POST request: %w", err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-	} else {
-		return errors.New("unsupported method type")
-	}
-
-	if inHeader && smsConfig.AuthTokenKey != nil && smsConfig.AuthTokenValue != nil {
-		req.Header.Set(*smsConfig.AuthTokenKey, *smsConfig.AuthTokenValue)
+	req, err := buildSmsRequest(smsConfig, message)
+	if err != nil {
+		return err
 	}
 
 	resp, err := httpClient.Do(req)
@@ -183,8 +267,8 @@ func (n Notifier) HandleSmsNotifier(provider sqlc.Provider, message sqlc.Message
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to send SMS, status: %d, response: %s", resp.StatusCode, string(body))
+	if err := smsResponseError(req.URL.String(), resp.StatusCode, body); err != nil {
+		return err
 	}
 
 	fmt.Println("SMS sent successfully")

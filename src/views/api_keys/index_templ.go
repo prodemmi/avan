@@ -72,7 +72,7 @@ func Index(apiKeyList []sqlc.ApiKey, page components.PageData, workspaceID int64
 				if header == "ExpireAt" {
 					expireAt := row["ExpireAt"].(*time.Time)
 					if expireAt != nil {
-						return fmt.Sprintf("Until %v", expireAt.Format(time.RFC822))
+						return fmt.Sprintf(`Until <time data-localized-date-time datetime="%s">%s</time>`, expireAt.Format(time.RFC3339), expireAt.Format(time.RFC822))
 					} else {
 						return "No Expire"
 					}

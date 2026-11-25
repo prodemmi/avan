@@ -5,6 +5,7 @@
 package sqlc
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -17,6 +18,22 @@ type ApiKey struct {
 	ExpireAt    *time.Time `db:"expire_at" json:"expire_at"`
 	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
+}
+
+type App struct {
+	ID          int64      `db:"id" json:"id"`
+	WorkspaceID int64      `db:"workspace_id" json:"workspace_id"`
+	Name        string     `db:"name" json:"name"`
+	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
+}
+
+type Business struct {
+	ID        int64      `db:"id" json:"id"`
+	OwnerID   int64      `db:"owner_id" json:"owner_id"`
+	Name      string     `db:"name" json:"name"`
+	CreatedAt *time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt *time.Time `db:"updated_at" json:"updated_at"`
 }
 
 type EmailConfig struct {
@@ -34,20 +51,22 @@ type EmailConfig struct {
 }
 
 type Message struct {
-	ID          int64      `db:"id" json:"id"`
-	WorkspaceID int64      `db:"workspace_id" json:"workspace_id"`
-	ProviderID  int64      `db:"provider_id" json:"provider_id"`
-	TemplateID  *int64     `db:"template_id" json:"template_id"`
-	Recipient   string     `db:"recipient" json:"recipient"`
-	Content     string     `db:"content" json:"content"`
-	Status      int64      `db:"status" json:"status"`
-	Error       *string    `db:"error" json:"error"`
-	Payload     *string    `db:"payload" json:"payload"`
-	ScheduleAt  *time.Time `db:"schedule_at" json:"schedule_at"`
-	SentAt      *time.Time `db:"sent_at" json:"sent_at"`
-	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
-	Retry       bool       `db:"retry" json:"retry"`
+	ID             int64          `db:"id" json:"id"`
+	WorkspaceID    int64          `db:"workspace_id" json:"workspace_id"`
+	ProviderID     int64          `db:"provider_id" json:"provider_id"`
+	TemplateID     *int64         `db:"template_id" json:"template_id"`
+	Recipient      string         `db:"recipient" json:"recipient"`
+	Content        string         `db:"content" json:"content"`
+	Status         int64          `db:"status" json:"status"`
+	Error          *string        `db:"error" json:"error"`
+	Payload        *string        `db:"payload" json:"payload"`
+	ScheduleAt     *time.Time     `db:"schedule_at" json:"schedule_at"`
+	SentAt         *time.Time     `db:"sent_at" json:"sent_at"`
+	CreatedAt      *time.Time     `db:"created_at" json:"created_at"`
+	UpdatedAt      *time.Time     `db:"updated_at" json:"updated_at"`
+	Retry          bool           `db:"retry" json:"retry"`
+	IdempotencyKey sql.NullString `db:"idempotency_key" json:"idempotency_key"`
+	RequestHash    sql.NullString `db:"request_hash" json:"request_hash"`
 }
 
 type Permission struct {
@@ -66,6 +85,9 @@ type Provider struct {
 	Name        string     `db:"name" json:"name"`
 	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
+	AppID       int64      `db:"app_id" json:"app_id"`
+	Priority    int64      `db:"priority" json:"priority"`
+	Weight      int64      `db:"weight" json:"weight"`
 }
 
 type Role struct {
@@ -116,6 +138,11 @@ type SmsConfig struct {
 	CreatedAt      *time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt      *time.Time `db:"updated_at" json:"updated_at"`
 	BodySchema     *string    `db:"body_schema" json:"body_schema"`
+	BodyEncoding   string     `db:"body_encoding" json:"body_encoding"`
+	AuthType       string     `db:"auth_type" json:"auth_type"`
+	AuthUsername   *string    `db:"auth_username" json:"auth_username"`
+	AccountSid     *string    `db:"account_sid" json:"account_sid"`
+	Sender         *string    `db:"sender" json:"sender"`
 }
 
 type TelegramConfig struct {
@@ -167,10 +194,11 @@ type WebhookConfig struct {
 }
 
 type Workspace struct {
-	ID        int64      `db:"id" json:"id"`
-	OwnerID   int64      `db:"owner_id" json:"owner_id"`
-	Name      string     `db:"name" json:"name"`
-	IsDefault bool       `db:"is_default" json:"is_default"`
-	CreatedAt *time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt *time.Time `db:"updated_at" json:"updated_at"`
+	ID         int64      `db:"id" json:"id"`
+	OwnerID    int64      `db:"owner_id" json:"owner_id"`
+	Name       string     `db:"name" json:"name"`
+	IsDefault  bool       `db:"is_default" json:"is_default"`
+	CreatedAt  *time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt  *time.Time `db:"updated_at" json:"updated_at"`
+	BusinessID int64      `db:"business_id" json:"business_id"`
 }

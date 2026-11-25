@@ -1,12 +1,17 @@
 package create_config_forms
 
-import "avan/views/components"
+import (
+	"avan/views/components"
+	"strconv"
+)
 
-templ EmailForm() {
+templ EmailForm(host string, port string, username string) {
+	{{ var portValue *int64 }}
+	{{ if parsed, err := strconv.ParseInt(port, 10, 64); err == nil { portValue = &parsed } }}
 	<div class="provider-fields">
-		<div class="provider-field"><label for="smtp_host">SMTP host</label>@components.Input("smtp_host", "smtp.example.com", "")</div>
-		<div class="provider-field"><label for="smtp_port">SMTP port</label>@components.NumberInput("smtp_port", "587", nil)</div>
-		<div class="provider-field"><label for="username">Username <span>(optional)</span></label>@components.OptionalInput("username", "SMTP username", "")</div>
+		<div class="provider-field"><label for="smtp_host">SMTP host</label>@components.Input("smtp_host", "smtp.example.com", host)</div>
+		<div class="provider-field"><label for="smtp_port">SMTP port</label>@components.NumberInput("smtp_port", "587", portValue)</div>
+		<div class="provider-field"><label for="username">Username <span>(optional)</span></label>@components.OptionalInput("username", "SMTP username", username)</div>
 		<div class="provider-field"><label for="password">Password <span>(optional)</span></label>@components.OptionalPasswordInput("password", "SMTP password", "")</div>
 		<div class="provider-field provider-field-wide"><label for="from_email">From email</label>@components.Input("from_email", "notifications@example.com", "")</div>
 	</div>

@@ -18,6 +18,10 @@ func (a UserService) SaveRole(ctx context.Context, workspaceID, roleID int64, na
 	return a.Repo.SaveRole(ctx, workspaceID, roleID, name, permissions)
 }
 
+func (a UserService) DeleteRole(ctx context.Context, workspaceID, roleID int64) error {
+	return a.Repo.DeleteRole(ctx, workspaceID, roleID)
+}
+
 func (a UserService) AssignRole(ctx context.Context, workspaceID, userID, roleID int64) error {
 	return a.Repo.AssignRole(ctx, workspaceID, userID, roleID)
 }

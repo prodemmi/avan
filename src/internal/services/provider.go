@@ -35,13 +35,13 @@ func (w ProviderService) GetProvider(providerID int64) (sqlc.Provider, error) {
 	})
 }
 
-func (w ProviderService) UpdateProvider(providerID int64, name string) error {
+func (w ProviderService) UpdateProvider(providerID int64, name string, priority, weight int64) error {
 	ctx := context.Background()
 	provider, err := w.GetProvider(providerID)
 	if err != nil {
 		return err
 	}
-	err = w.Repo.UpdateProvider(ctx, providerID, name)
+	err = w.Repo.UpdateProvider(ctx, providerID, name, priority, weight)
 
 	if err == nil {
 		key := w.ProviderCache.GetStringKey("provider", providerID)
@@ -97,9 +97,9 @@ func (w ProviderService) GetWebhookConfig(providerID int64) (sqlc.WebhookConfig,
 	})
 }
 
-func (w ProviderService) UpdateSmsConfig(id int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string) error {
+func (w ProviderService) UpdateSmsConfig(id int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string, bodyEncoding, authType string, authUsername, accountSID, sender *string) error {
 	ctx := context.Background()
-	err := w.Repo.UpdateSmsConfig(ctx, id, url, method, authTokenKey, authTokenValue, isAuthInHeader, bodySchema)
+	err := w.Repo.UpdateSmsConfig(ctx, id, url, method, authTokenKey, authTokenValue, isAuthInHeader, bodySchema, bodyEncoding, authType, authUsername, accountSID, sender)
 	if err == nil {
 		key := w.SmsConfigCache.GetStringKey("sms-config", id)
 		w.SmsConfigCache.Delete(key...)
@@ -147,9 +147,9 @@ func (w ProviderService) UpdateWebhookConfig(id int64, url string) error {
 	return err
 }
 
-func (w ProviderService) CreateSmsConfig(workspaceID int64, providerID int64, ownerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string) error {
+func (w ProviderService) CreateSmsConfig(workspaceID int64, providerID int64, ownerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string, bodyEncoding, authType string, authUsername, accountSID, sender *string) error {
 	ctx := context.Background()
-	return w.Repo.CreateSmsConfig(ctx, workspaceID, providerID, ownerID, url, method, authTokenKey, authTokenValue, isAuthInHeader, bodySchema)
+	return w.Repo.CreateSmsConfig(ctx, workspaceID, providerID, ownerID, url, method, authTokenKey, authTokenValue, isAuthInHeader, bodySchema, bodyEncoding, authType, authUsername, accountSID, sender)
 }
 
 func (w ProviderService) CreateEmailConfig(workspaceID int64, providerID int64, ownerID int64, smtpHost string, smtpPort int64, fromEmail string, username *string, password *string) error {
@@ -172,9 +172,9 @@ func (w ProviderService) CreateWebhookConfig(workspaceID int64, providerID int64
 	return w.Repo.CreateWebhookConfig(ctx, workspaceID, providerID, ownerID, url)
 }
 
-func (w ProviderService) CreateProvider(workspaceID int64, ownerID int64, configType int32, name string) (sqlc.Provider, error) {
+func (w ProviderService) CreateProvider(workspaceID int64, ownerID int64, configType int32, name string, priority, weight int64) (sqlc.Provider, error) {
 	ctx := context.Background()
-	provider, err := w.Repo.CreateProvider(ctx, workspaceID, ownerID, configType, name)
+	provider, err := w.Repo.CreateProvider(ctx, workspaceID, ownerID, configType, name, priority, weight)
 	if err == nil {
 		w.invalidateProviders(workspaceID)
 	}
@@ -252,10 +252,10 @@ func (w ProviderService) CreateDefaultProviders() {
 			return
 		}
 
-		provider, _ := w.CreateProvider(1, 1, typeInt, providerSettings.Name)
+		provider, _ := w.CreateProvider(1, 1, typeInt, providerSettings.Name, 0, 1)
 		switch providerSettings.Type {
 		case "sms":
-			w.CreateSmsConfig(1, provider.ID, 1, providerSettings.Url, methodInt, &providerSettings.AuthTokenKey, &providerSettings.AuthTokenValue, &providerSettings.IsAuthInHeader, nil)
+			w.CreateSmsConfig(1, provider.ID, 1, providerSettings.Url, methodInt, &providerSettings.AuthTokenKey, &providerSettings.AuthTokenValue, &providerSettings.IsAuthInHeader, nil, "json", "token", nil, nil, nil)
 			break
 		case "email":
 			w.CreateEmailConfig(1, provider.ID, 1, providerSettings.SmtpHost, int64(providerSettings.SmtpPort), providerSettings.FromEmail, &providerSettings.Username, &providerSettings.Password)

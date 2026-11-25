@@ -4,9 +4,11 @@ import (
 	"avan/views/components"
 	"avan/views/providers/create_config_forms"
 	"fmt"
+	"strings"
 )
 
-templ Create(configType string) {
+templ Create(configType string, mode string, template ProviderTemplate) {
+	{{ priority := int64(0); weight := int64(1) }}
 	<div class="provider-form-page">
 		<a class="provider-back-link" href="/dashboard/providers/">← Back to providers</a>
 		<div class="provider-form-heading">
@@ -14,46 +16,129 @@ templ Create(configType string) {
 			<div><span class="admin-eyebrow">NEW INTEGRATION</span><h1>Create provider</h1><p>Connect a service to deliver messages from this workspace.</p></div>
 		</div>
 		<form class="provider-config-form" action={ templ.URL(fmt.Sprintf("/dashboard/providers/create/%s", configType)) } method="POST">
-			<section class="provider-form-card">
-				<div class="provider-form-section-heading"><span class="provider-form-step">1</span><div><h2>Provider details</h2><p>Give this connection a recognizable name and choose its channel.</p></div></div>
+			<input type="hidden" name="mode" value={ mode }/>
+			<input type="hidden" name="template" value={ template.ID }/>
+			<section class="provider-form-card" data-wizard-step="1">
+				<div class="provider-form-section-heading"><span class="provider-form-step">1</span><div><h2>Choose a setup mode</h2><p>Start blank or use a documented service template.</p></div></div>
+				<div class="provider-fields">
+					<div class="provider-field">
+						<label for="provider-mode">Configuration mode</label>
+						<select id="provider-mode" aria-label="Configuration mode">
+							if mode == "template" {
+								<option value="blank">Blank configuration</option>
+								<option value="template" selected>Use a template</option>
+							} else {
+								<option value="blank" selected>Blank configuration</option>
+								<option value="template">Use a template</option>
+							}
+						</select>
+					</div>
+					if mode == "template" {
+						<div class="provider-field">
+							<label for="provider-template">Provider template</label>
+							<select id="provider-template">
+								<option value="">Choose a service</option>
+								for _, option := range AllProviderTemplates() {
+									<option value={ option.ID } data-type={ option.ConfigType } selected?={ option.ID == template.ID }>{ option.Region } · { option.Name }</option>
+								}
+							</select>
+						</div>
+					}
+					if template.ID != "" {
+						<div class="provider-field provider-field-wide">
+							<strong>{ template.Name }</strong>
+							<p>{ template.Description }</p>
+							<p>Required: { strings.Join(template.RequiredFields, ", ") }</p>
+							if template.Documentation != "" {
+								<a href={ template.Documentation } target="_blank" rel="noopener noreferrer">Official provider documentation</a>
+							}
+						</div>
+					}
+				</div>
+			</section>
+			<section class="provider-form-card" data-wizard-step="2">
+				<div class="provider-form-section-heading"><span class="provider-form-step">2</span><div><h2>Provider details</h2><p>Name this connection, choose its channel, and set its failover order.</p></div></div>
 				<div class="provider-fields">
 					<div class="provider-field">
 						<label for="name">Provider name</label>
-						@components.Input("name", "Enter provider name", "")
+						@components.Input("name", "Enter provider name", template.Name)
 						<p>Use a short name your team will recognize.</p>
 					</div>
 					<div class="provider-field">
 						<label for="type">Channel</label>
-						{{ options := []components.SelectOption{{Value: "sms", Label: "Sms"}, {Value: "email", Label: "Email"}, {Value: "telegram", Label: "Telegram"}, {Value: "slack", Label: "Slack"}, {Value: "webhook", Label: "Webhook"}} }}
+						{{ options := []components.SelectOption{{Value: "sms", Label: "SMS"}, {Value: "email", Label: "Email"}, {Value: "telegram", Label: "Telegram"}, {Value: "slack", Label: "Slack"}, {Value: "webhook", Label: "Webhook"}} }}
 						@components.Select("type", options, configType)
+					</div>
+					<div class="provider-field">
+						<label for="priority">Failover priority</label>
+						@components.NumberInput("priority", "0", &priority)
+						<p>Lower values are tried first after the selected provider fails.</p>
+					</div>
+					<div class="provider-field">
+						<label for="weight">Failover weight</label>
+						@components.NumberInput("weight", "1", &weight)
+						<p>Higher weight is more likely to be tried first among equal-priority backups.</p>
 					</div>
 				</div>
 			</section>
-			<section class="provider-form-card">
-				<div class="provider-form-section-heading"><span class="provider-form-step">2</span><div><h2>Connection settings</h2><p>Enter the credentials and endpoint for this provider.</p></div></div>
-				switch configType {
+			<section class="provider-form-card" data-wizard-step="3">
+				<div class="provider-form-section-heading"><span class="provider-form-step">3</span><div><h2>Connection settings</h2><p>Enter required credentials and endpoints. Secret values are never prefilled.</p></div></div>
+					switch configType {
 					case "sms":
-						@create_config_forms.SmsForm()
+						@create_config_forms.SmsForm(template.URL, template.Method, template.AuthKey, template.AuthType, template.BodyEncoding, template.BodySchema)
 					case "email":
-						@create_config_forms.EmailForm()
+						@create_config_forms.EmailForm(template.SMTPHost, template.SMTPPort, template.SMTPUsername)
 					case "telegram":
 						@create_config_forms.TelegramForm()
 					case "slack":
-						@create_config_forms.SlackForm()
+						@create_config_forms.SlackForm(template.URL)
 					case "webhook":
-						@create_config_forms.WebhookForm()
+						@create_config_forms.WebhookForm(template.URL)
 				}
 			</section>
 			<div class="provider-form-actions">
 				<a class="provider-cancel-button" href="/dashboard/providers/">Cancel</a>
-				<button class="provider-save-button" type="submit"><i class="ri-check-line" aria-hidden="true"></i>Create provider</button>
+				<button class="provider-cancel-button" type="button" id="wizard-back">Back</button>
+				<button class="provider-save-button" type="button" id="wizard-next">Continue</button>
+				<button class="provider-save-button" type="submit" id="wizard-submit"><i class="ri-check-line" aria-hidden="true"></i>Create provider</button>
 			</div>
 		</form>
 	</div>
 	<script>
-        const typeValue = document.querySelector("[name=type]");
-        typeValue?.addEventListener("change", (event) => {
-            location.href = "/dashboard/providers/create/" + event.target.value;
-        });
+		const modeSelect = document.getElementById("provider-mode");
+		const templateSelect = document.getElementById("provider-template");
+		const typeSelect = document.querySelector("[name=type]");
+		const panels = [...document.querySelectorAll("[data-wizard-step]")];
+		const back = document.getElementById("wizard-back");
+		const next = document.getElementById("wizard-next");
+		const submit = document.getElementById("wizard-submit");
+		let step = 1;
+		const showStep = () => {
+			panels.forEach((panel) => panel.hidden = Number(panel.dataset.wizardStep) !== step);
+			back.hidden = step === 1;
+			next.hidden = step === panels.length;
+			submit.hidden = step !== panels.length;
+		};
+		const openSelection = (type, mode, template) => {
+			const query = new URLSearchParams({ mode });
+			if (template) query.set("template", template);
+			location.href = "/dashboard/providers/create/" + type + "?" + query.toString();
+		};
+		modeSelect?.addEventListener("change", () => openSelection(typeSelect.value, modeSelect.value, ""));
+		templateSelect?.addEventListener("change", () => {
+			const option = templateSelect.options[templateSelect.selectedIndex];
+			if (option?.value) openSelection(option.dataset.type, "template", option.value);
+		});
+		typeSelect?.addEventListener("change", () => openSelection(typeSelect.value, modeSelect.value, ""));
+		next?.addEventListener("click", () => {
+			if (step === 1 && modeSelect.value === "template" && !templateSelect?.value) {
+				templateSelect?.focus();
+				return;
+			}
+			step = Math.min(step + 1, panels.length);
+			showStep();
+		});
+		back?.addEventListener("click", () => { step = Math.max(step - 1, 1); showStep(); });
+		showStep();
     </script>
 }

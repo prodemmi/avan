@@ -248,9 +248,10 @@ func Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sql
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(`curl -X POST "https://your-avan-host/api/send" \
   -H "Content-Type: application/json" \
   -H "X-API-KEY: YOUR_API_KEY" \
+  -H "Idempotency-Key: unique-key-for-this-message" \
   -d '{"provider_id":` + fmt.Sprint(selectedProvider.ID) + `,"recipient":"+989120000000","message":"Hello","retry":true}'`)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 77, Col: 122}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 78, Col: 122}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -271,33 +272,33 @@ func Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sql
   "payload": {"campaign":"welcome"}
 }`, selectedProvider.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 90, Col: 24}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 91, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</pre><p class=\"mt-2 text-sm\">Success <code>200</code></p><pre>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</pre><p class=\"mt-2 text-sm\">Send requests require an <code>Idempotency-Key</code> unique to that logical message. Reuse the same key only when retrying the same request; a different request with that key returns <code>409</code>.</p><p class=\"mt-2 text-sm\">Accepted <code>202</code></p><pre>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var14 string
-		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(`{"data":"message added to the queue"}`)
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(`{"data":{"message_id":123,"status":"pending","duplicate":false}}`)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 92, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 94, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</pre><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\">Errors: <code>400</code> invalid JSON or provider/template outside the selected workspace; <code>401</code> missing, invalid, or expired API key; <code>500</code> database or queue failure. Error body: <code>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</pre><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\">Errors: <code>400</code> invalid JSON, provider/template outside the selected workspace, or missing idempotency key; <code>401</code> missing, invalid, or expired API key; <code>403</code> workspace security policy denied the request; <code>409</code> idempotency key reused for a different request; <code>500</code> database or queue failure. Error body: <code>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(`{"error":"description"}`)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 93, Col: 295}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 95, Col: 449}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -314,13 +315,13 @@ func Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sql
   {"key":"order_id","value":"A-1024"}
 ]`)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 102, Col: 2}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 104, Col: 2}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</pre></section><section><h2 class=\"text-lg font-semibold\">SMS POST body variables</h2><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\">Configure the JSON body template on the SMS provider. Writable variables: <code>$send_to</code>, <code>$message</code>, <code>$payload</code>, <code>$retry</code>, <code>$schedule_at</code>, <code>$provider_id</code>, <code>$template_id</code>, and <code>$workspace_id</code>. <code>$payload</code> inserts a JSON object; <code>$retry</code> inserts a boolean.</p><pre>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</pre></section><section><h2 class=\"text-lg font-semibold\">SMS POST body variables</h2><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\">Configure the JSON-object body template and choose JSON or form-urlencoded encoding on the SMS provider. Writable variables: <code>$send_to</code>, <code>$message</code>, <code>$username</code>, <code>$sender</code>, <code>$payload</code>, <code>$retry</code>, <code>$schedule_at</code>, <code>$provider_id</code>, <code>$template_id</code>, and <code>$workspace_id</code>. Provider URLs may also use <code>$account_sid</code>. <code>$payload</code> inserts a JSON object; <code>$retry</code> inserts a boolean.</p><pre>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -332,65 +333,26 @@ func Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sql
   "campaign": "$payload"
 }`)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 112, Col: 2}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 114, Col: 2}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</pre></section><section><h2 class=\"text-lg font-semibold\">Schedule message</h2><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\">Set <code>schedule_at</code> to a future RFC 3339 timestamp, such as <code>2026-12-01T09:30:00Z</code>. Avan stores the message and queues it when it is due. Omit the field to send as soon as possible.</p></section><section><h2 class=\"text-lg font-semibold\">Quick send</h2><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\"><code>POST /api/quick-send</code> attempts delivery immediately. With <code>retry: true</code>, it makes up to three immediate attempts and queues the message for background retry if those fail. With <code>retry: false</code>, it makes one attempt and reports a provider failure. Future <code>schedule_at</code> values are scheduled instead of sent immediately.</p><p class=\"mt-2 text-sm\">Success is <code>200</code> with <code>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</pre></section><section><h2 class=\"text-lg font-semibold\">Schedule message</h2><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\">Set <code>schedule_at</code> to a future RFC 3339 timestamp, such as <code>2026-12-01T09:30:00Z</code>. Avan stores the message and queues it when it is due. Omit the field to send as soon as possible.</p></section><section><h2 class=\"text-lg font-semibold\">Quick send</h2><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\"><code>POST /api/quick-send</code> attempts delivery immediately. With <code>retry: true</code>, it makes up to three immediate attempts and queues the message for background retry if those fail. With <code>retry: false</code>, it makes one attempt and reports a provider failure. Future <code>schedule_at</code> values are scheduled instead of sent immediately.</p><p class=\"mt-2 text-sm\">It uses the same required <code>Idempotency-Key</code> header as <code>/api/send</code>. Accepted <code>202</code> responses identify the pending/scheduled message; completed sends return <code>200</code>, while a recorded failed replay returns <code>502</code>.</p></section><section><h2 class=\"text-lg font-semibold\">Message inquiry</h2><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\"><code>GET /api/messages/&#123;id&#125;</code> returns the latest status and timestamps for a message in the API key's workspace. Current statuses are <code>pending</code>, <code>scheduled</code>, <code>sent</code>, and <code>failed</code>. Delivery and read receipts are not available until a provider callback is configured.</p></section><section><h2 class=\"text-lg font-semibold\">Interactive API reference</h2><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\">Try the documented endpoints with your API key. Do not paste production keys into shared browsers.</p><div id=\"swagger-ui\" data-spec-url=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var18 string
-		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(`{"data":"message sent quickly"}`)
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fmt.Sprintf("/dashboard/developer/openapi.json?workspace-id=%d&provider-id=%d", selected.ID, selectedProvider.ID)).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 121, Col: 101}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 132, Col: 153}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</code>, <code>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var19 string
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(`{"data":"message scheduled"}`)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 121, Col: 150}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</code>, or <code>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(`{"data":"message added to the queue"}`)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 121, Col: 211}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</code>. It uses the same request body and <code>400</code>, <code>401</code>, and <code>500</code> error format as <code>/api/send</code>.</p></section><section><h2 class=\"text-lg font-semibold\">Interactive API reference</h2><p class=\"mt-2 text-sm text-gray-600 dark:text-gray-300\">Try the documented endpoints with your API key. Do not paste production keys into shared browsers.</p><div id=\"swagger-ui\" data-spec-url=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var21 string
-		templ_7745c5c3_Var21, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fmt.Sprintf("/dashboard/developer/openapi.json?workspace-id=%d&provider-id=%d", selected.ID, selectedProvider.ID)).ResolveURL(ctx)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/developer/index.templ`, Line: 126, Col: 153}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\"></div></section></div><link rel=\"stylesheet\" href=\"https://unpkg.com/swagger-ui-dist@5/swagger-ui.css\"><script src=\"https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js\"></script><script>\n\t\twindow.addEventListener(\"load\", () => SwaggerUIBundle({\n\t\t\turl: document.getElementById(\"swagger-ui\").dataset.specUrl,\n\t\t\tdom_id: \"#swagger-ui\",\n\t\t\tdeepLinking: true,\n\t\t\tpersistAuthorization: false\n\t\t}));\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\"></div></section></div><link rel=\"stylesheet\" href=\"https://unpkg.com/swagger-ui-dist@5/swagger-ui.css\"><script src=\"https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js\"></script><script>\n\t\twindow.addEventListener(\"load\", () => SwaggerUIBundle({\n\t\t\turl: document.getElementById(\"swagger-ui\").dataset.specUrl,\n\t\t\tdom_id: \"#swagger-ui\",\n\t\t\tdeepLinking: true,\n\t\t\tpersistAuthorization: false,\n\t\t\tpresets: [SwaggerUIBundle.presets.apis],\n\t\t\tlayout: \"BaseLayout\"\n\t\t}));\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

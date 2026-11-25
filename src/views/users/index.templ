@@ -2,6 +2,7 @@ package users
 
 import (
 	"avan/internal/db/sqlc"
+	"avan/internal/model"
 	"fmt"
 	"strings"
 )
@@ -41,6 +42,17 @@ func roleHasPermission(role sqlc.GetWorkspaceRolesPostgresqlRow, permission stri
 	return strings.Contains(","+value+",", ","+permission+",")
 }
 
+func assignedRoleName(user sqlc.GetUsersPostgresqlRow, roles []sqlc.GetWorkspaceRolesPostgresqlRow) string {
+	if user.RoleID.Valid {
+		for _, role := range roles {
+			if role.ID == user.RoleID.Int64 {
+				return role.Name
+			}
+		}
+	}
+	return "Unassigned"
+}
+
 templ Index(members []Member, roleList []sqlc.GetWorkspaceRolesPostgresqlRow) {
 	<div class="flex items-center justify-between mb-6">
 		<div>
@@ -69,24 +81,10 @@ templ Index(members []Member, roleList []sqlc.GetWorkspaceRolesPostgresqlRow) {
 										<span>—</span>
 									}
 								</td>
-								<td>
-									if member.IsSuper {
-										<span class="super-admin-badge">Super admin</span>
-									} else {
-										<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/role", member.User.ID)) } method="POST" class="role-assignment-form">
-											<select name="role_id" aria-label={ fmt.Sprintf("Role for %s", member.User.Email) } onchange="this.form.requestSubmit()">
-												<option value="0" selected?={ !member.User.RoleID.Valid }>Unassigned</option>
-												for _, role := range roleList {
-													<option value={ fmt.Sprint(role.ID) } selected?={ member.User.RoleID.Valid && member.User.RoleID.Int64 == role.ID }>{ role.Name }</option>
-												}
-											</select>
-											<noscript><button type="submit">Save</button></noscript>
-										</form>
-									}
-								</td>
+								<td>{ assignedRoleName(member.User, roleList) }</td>
 								<td>
 									if member.User.CreatedAt != nil {
-										{ member.User.CreatedAt.Format("Jan 2, 2006") }
+										<time data-localized-date datetime={ member.User.CreatedAt.Format("2006-01-02") }>{ member.User.CreatedAt.Format("Jan 2, 2006") }</time>
 									} else {
 										<span>—</span>
 									}
@@ -95,42 +93,61 @@ templ Index(members []Member, roleList []sqlc.GetWorkspaceRolesPostgresqlRow) {
 									if member.IsSuper {
 										<span class="text-sm text-gray-500">Configured account is protected.</span>
 									} else {
-										<details class="member-actions">
-											<summary>Manage</summary>
-											<div class="member-actions-content">
-												<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/edit", member.User.ID)) } method="POST" class="user-edit-form">
-													<label>Name<input name="name" maxlength="50" required value={ member.User.Name } /></label>
-													<label>Email<input name="email" type="email" maxlength="50" required value={ member.User.Email } /></label>
-													<label>New password<input name="password" type="password" minlength="8" autocomplete="new-password" placeholder="Leave blank to keep unchanged" /></label>
-													<button type="submit">Save changes</button>
-												</form>
-												<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/delete", member.User.ID)) } method="POST" class="user-delete-form">
-													<button class="button-danger" type="submit">Delete user</button>
-												</form>
-												<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/workspaces", member.User.ID)) } method="POST" class="user-workspaces-form">
-													<strong>Workspace access</strong>
-													for _, access := range member.Workspaces {
-														<div class="workspace-role-assignment">
-															<label class="workspace-access-check"><input type="checkbox" name="workspace_ids" value={ fmt.Sprint(access.Workspace.ID) } checked?={ access.SelectedRoleID > 0 } />{ access.Workspace.Name }</label>
-															<select name={ fmt.Sprintf("role_%d", access.Workspace.ID) } aria-label={ fmt.Sprintf("Role in %s", access.Workspace.Name) }>
-																for _, role := range access.Roles {
-																	<option value={ fmt.Sprint(role.ID) } selected?={ access.SelectedRoleID == role.ID }>{ role.Name }</option>
-																}
-															</select>
-														</div>
-													}
-													<button type="submit">Save workspace access</button>
-												</form>
-											</div>
-										</details>
+										<button type="button" class="member-edit-trigger" data-user-drawer={ fmt.Sprintf("user-drawer-%d", member.User.ID) } aria-haspopup="dialog" aria-controls={ fmt.Sprintf("user-drawer-%d", member.User.ID) }>Manage</button>
 									}
 								</td>
 							</tr>
 						}
 					</tbody>
-				</table>
-			</div>
-		}
+						</table>
+				</div>
+				for _, member := range members {
+					if !member.IsSuper {
+						{{ drawerID := fmt.Sprintf("user-drawer-%d", member.User.ID) }}
+						{{ titleID := fmt.Sprintf("user-drawer-title-%d", member.User.ID) }}
+						<dialog class="user-drawer" id={ drawerID } aria-labelledby={ titleID }>
+							<div class="user-drawer-header">
+								<div>
+									<h2 id={ titleID }>Edit user details</h2>
+									<p>{ member.User.Email }</p>
+								</div>
+								<form method="dialog"><button type="submit" class="user-drawer-close" aria-label="Close user editor" autofocus>×</button></form>
+							</div>
+							<section class="user-drawer-section">
+								<h3>User details</h3>
+								<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/edit", member.User.ID)) } method="POST" class="user-edit-form">
+									<label for={ fmt.Sprintf("user-name-%d", member.User.ID) }>Name</label>
+									<input id={ fmt.Sprintf("user-name-%d", member.User.ID) } name="name" maxlength="50" required value={ member.User.Name } />
+									<label for={ fmt.Sprintf("user-email-%d", member.User.ID) }>Email</label>
+									<input id={ fmt.Sprintf("user-email-%d", member.User.ID) } name="email" type="email" maxlength="50" required value={ member.User.Email } />
+									<label for={ fmt.Sprintf("user-password-%d", member.User.ID) }>New password</label>
+									<input id={ fmt.Sprintf("user-password-%d", member.User.ID) } name="password" type="password" minlength="8" autocomplete="new-password" placeholder="Leave blank to keep unchanged" />
+									<button type="submit">Save changes</button>
+								</form>
+							</section>
+							<section class="user-drawer-section">
+								<h3>Workspace access</h3>
+								<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/workspaces", member.User.ID)) } method="POST" class="user-workspaces-form">
+									for _, access := range member.Workspaces {
+										<div class="workspace-role-assignment">
+											<label class="workspace-access-check"><input type="checkbox" name="workspace_ids" value={ fmt.Sprint(access.Workspace.ID) } checked?={ access.SelectedRoleID > 0 } />{ access.Workspace.Name }</label>
+											<select name={ fmt.Sprintf("role_%d", access.Workspace.ID) } aria-label={ fmt.Sprintf("Role in %s", access.Workspace.Name) }>
+												for _, role := range access.Roles {
+													<option value={ fmt.Sprint(role.ID) } selected?={ access.SelectedRoleID == role.ID }>{ role.Name }</option>
+												}
+											</select>
+										</div>
+									}
+									<button type="submit">Save workspace access</button>
+								</form>
+							</section>
+							<form action={ templ.URL(fmt.Sprintf("/dashboard/users/%d/delete", member.User.ID)) } method="POST" class="user-delete-form">
+								<button class="button-danger" type="submit">Delete user</button>
+							</form>
+						</dialog>
+					}
+				}
+			}
 	</section>
 	<section class="user-admin-panel">
 		<h2 class="text-lg font-semibold">Add administrator or member</h2>
@@ -152,15 +169,30 @@ templ Index(members []Member, roleList []sqlc.GetWorkspaceRolesPostgresqlRow) {
 			<div><h2 class="text-lg font-semibold">Roles &amp; permissions</h2><p class="mt-1 text-sm text-gray-500">Permissions control access to dashboard sections and management actions.</p></div>
 		</div>
 		for _, role := range roleList {
-			<form action={ templ.URL(fmt.Sprintf("/dashboard/users/roles/%d", role.ID)) } method="POST" class="role-editor">
-				<label class="role-name">Role name<input name="name" maxlength="50" required value={ role.Name } /></label>
-				<div class="permission-grid">
-					for _, permission := range permissions {
-						<label><input type="checkbox" name="permissions" value={ permission } checked?={ roleHasPermission(role, permission) } />{ permission }</label>
-					}
+			if model.IsDefaultRoleName(role.Name) {
+				<div class="role-editor role-editor-immutable">
+					<div class="role-name"><strong>{ role.Name }</strong><span>System role</span></div>
+					<div class="permission-grid">
+						for _, permission := range permissions {
+							<label><input type="checkbox" checked?={ roleHasPermission(role, permission) } disabled />{ permission }</label>
+						}
+					</div>
+					<span class="system-role-note">System roles are immutable.</span>
 				</div>
-				<button type="submit">Save role</button>
-			</form>
+			} else {
+				<form action={ templ.URL(fmt.Sprintf("/dashboard/users/roles/%d", role.ID)) } method="POST" class="role-editor">
+					<label class="role-name">Role name<input name="name" maxlength="50" required value={ role.Name } /></label>
+					<div class="permission-grid">
+						for _, permission := range permissions {
+							<label><input type="checkbox" name="permissions" value={ permission } checked?={ roleHasPermission(role, permission) } />{ permission }</label>
+						}
+					</div>
+					<div class="role-actions">
+						<button type="submit">Save role</button>
+						<button type="submit" class="button-danger" formaction={ templ.URL(fmt.Sprintf("/dashboard/users/roles/%d/delete", role.ID)) }>Delete role</button>
+					</div>
+				</form>
+			}
 		}
 		<form action="/dashboard/users/roles" method="POST" class="role-editor">
 			<label class="role-name">Create role<input name="name" maxlength="50" placeholder="e.g. Support" required /></label>

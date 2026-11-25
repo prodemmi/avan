@@ -2,8 +2,8 @@ package create_config_forms
 
 import "avan/views/components"
 
-templ SlackForm() {
+templ SlackForm(url string) {
 	<div class="provider-fields">
-		<div class="provider-field provider-field-wide"><label for="slack_webhook_url">Slack webhook URL</label>@components.UrlInput("slack_webhook_url", "https://hooks.slack.com/services/...", "")<p>Use an incoming webhook URL from your Slack app.</p></div>
+		<div class="provider-field provider-field-wide"><label for="slack_webhook_url">Slack webhook URL</label>@components.UrlInput("slack_webhook_url", "https://hooks.slack.com/services/...", url)<p>Use an incoming webhook URL from your Slack app.</p></div>
 	</div>
 }

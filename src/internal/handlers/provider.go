@@ -13,6 +13,50 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func validateSMSForm(url *string, method *int, bodySchema *string, bodyEncoding, authType string, authUsername, accountSID, sender *string) error {
+	if url == nil || strings.TrimSpace(*url) == "" || method == nil || (*method != 0 && *method != 1) {
+		return fmt.Errorf("SMS URL and a supported HTTP method are required")
+	}
+	if bodyEncoding != "json" && bodyEncoding != "form" {
+		return fmt.Errorf("SMS POST body encoding must be JSON or form-urlencoded")
+	}
+	if authType != "token" && authType != "basic" {
+		return fmt.Errorf("SMS authentication type must be token or HTTP Basic")
+	}
+	if bodySchema != nil && strings.TrimSpace(*bodySchema) != "" {
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(*bodySchema), &fields); err != nil || fields == nil {
+			return fmt.Errorf("SMS body schema must be a JSON object")
+		}
+	}
+	if authType == "basic" && (authUsername == nil || strings.TrimSpace(*authUsername) == "") {
+		return fmt.Errorf("HTTP Basic username is required")
+	}
+	if bodySchema != nil {
+		if strings.Contains(*bodySchema, "$username") && (authUsername == nil || strings.TrimSpace(*authUsername) == "") {
+			return fmt.Errorf("SMS request username is required by the body template")
+		}
+		if strings.Contains(*bodySchema, "$sender") && (sender == nil || strings.TrimSpace(*sender) == "") {
+			return fmt.Errorf("SMS sender number or ID is required by the body template")
+		}
+	}
+	if strings.Contains(*url, "$account_sid") && (accountSID == nil || strings.TrimSpace(*accountSID) == "") {
+		return fmt.Errorf("Account SID is required by the provider URL")
+	}
+	return nil
+}
+
+func optionalTrimmed(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
+
 type ProviderHandler struct {
 	ProviderService  services.ProviderService
 	WorkspaceService services.WorkspaceService
@@ -56,7 +100,33 @@ func (w ProviderHandler) Create(c *gin.Context) {
 		return
 	}
 
-	defaultContent := providers.Create(typeParam)
+	mode := c.Query("mode")
+	if mode == "" {
+		mode = c.PostForm("mode")
+	}
+	if mode == "" {
+		mode = "blank"
+	}
+	templateID := c.Query("template")
+	if templateID == "" {
+		templateID = c.PostForm("template")
+	}
+	var template providers.ProviderTemplate
+	if templateID != "" {
+		var ok bool
+		template, ok = providers.FindProviderTemplate(templateID)
+		if !ok || template.ConfigType != typeParam {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		mode = "template"
+	}
+	if mode != "blank" && mode != "template" || mode == "template" && templateID == "" && c.Request.Method != http.MethodGet {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	defaultContent := providers.Create(typeParam, mode, template)
 	var items []layout.MenuItem
 	base := layout.Layout(defaultContent, "", items)
 	err := base.Render(c.Request.Context(), c.Writer)
@@ -67,7 +137,11 @@ func (w ProviderHandler) Create(c *gin.Context) {
 
 func (w ProviderHandler) Store(c *gin.Context) {
 	var body struct {
-		Name string `form:"name"`
+		Name     string `form:"name"`
+		Mode     string `form:"mode"`
+		Template string `form:"template"`
+		Priority int64  `form:"priority"`
+		Weight   int64  `form:"weight"`
 		// Sms Input
 		SmsURL            *string `form:"sms_url"`
 		SmsMethod         *int    `form:"sms_method"`
@@ -75,6 +149,11 @@ func (w ProviderHandler) Store(c *gin.Context) {
 		SmsAuthTokenValue *string `form:"sms_auth_token_value"`
 		SmsIsAuthInHeader *bool   `form:"sms_is_auth_in_header,default=false"`
 		SmsBodySchema     *string `form:"sms_body_schema"`
+		SmsBodyEncoding   string  `form:"sms_body_encoding"`
+		SmsAuthType       string  `form:"sms_auth_type"`
+		SmsAuthUsername   *string `form:"sms_auth_username"`
+		SmsAccountSID     *string `form:"sms_account_sid"`
+		SmsSender         *string `form:"sms_sender"`
 
 		// Email Input
 		SMTPHost  *string `form:"smtp_host"`
@@ -113,47 +192,117 @@ func (w ProviderHandler) Store(c *gin.Context) {
 	if err != nil {
 		return
 	}
+	if body.SmsBodyEncoding == "" {
+		body.SmsBodyEncoding = "json"
+	}
+	if body.SmsAuthType == "" {
+		body.SmsAuthType = "token"
+	}
+	body.SmsAuthUsername = optionalTrimmed(body.SmsAuthUsername)
+	body.SmsAccountSID = optionalTrimmed(body.SmsAccountSID)
+	body.SmsSender = optionalTrimmed(body.SmsSender)
+	if typeParam != "sms" && typeParam != "email" && typeParam != "telegram" && typeParam != "slack" && typeParam != "webhook" {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	if strings.TrimSpace(body.Name) == "" {
+		sendError(fmt.Errorf("provider name is required"))
+		return
+	}
+	if body.Priority < 0 || body.Priority > 2147483647 || body.Weight < 1 || body.Weight > 1000 {
+		sendError(fmt.Errorf("failover priority must be non-negative and weight must be between 1 and 1000"))
+		return
+	}
+	if body.Mode == "template" {
+		template, ok := providers.FindProviderTemplate(body.Template)
+		if !ok || template.ConfigType != typeParam {
+			sendError(fmt.Errorf("choose a supported template for this channel"))
+			return
+		}
+		if template.ID == "kavenegar" && (body.SmsAuthTokenValue == nil || strings.TrimSpace(*body.SmsAuthTokenValue) == "") {
+			sendError(fmt.Errorf("Kavenegar API key is required"))
+			return
+		}
+		if template.ID == "sendgrid" && (body.Password == nil || strings.TrimSpace(*body.Password) == "") {
+			sendError(fmt.Errorf("SendGrid API key is required"))
+			return
+		}
+		if template.ID == "melipayamak" && (body.SmsMethod == nil || *body.SmsMethod != 1 || body.SmsBodyEncoding != "form" || body.SmsAuthType != "token" || body.SmsAuthTokenKey == nil || strings.TrimSpace(*body.SmsAuthTokenKey) != "password" || body.SmsAuthTokenValue == nil || strings.TrimSpace(*body.SmsAuthTokenValue) == "" || body.SmsIsAuthInHeader != nil && *body.SmsIsAuthInHeader || body.SmsAuthUsername == nil || body.SmsSender == nil) {
+			sendError(fmt.Errorf("Melipayamak requires form-urlencoded POST, API username, password, and sender number"))
+			return
+		}
+		if template.ID == "twilio" && (body.SmsMethod == nil || *body.SmsMethod != 1 || body.SmsBodyEncoding != "form" || body.SmsAuthType != "basic" || body.SmsAuthUsername == nil || body.SmsAccountSID == nil || body.SmsSender == nil || body.SmsAuthTokenValue == nil || strings.TrimSpace(*body.SmsAuthTokenValue) == "" || body.SmsURL == nil || !strings.Contains(*body.SmsURL, "$account_sid")) {
+			sendError(fmt.Errorf("Twilio requires form-urlencoded POST, Account SID, API Key SID and secret, and a sender number"))
+			return
+		}
+	} else if body.Mode != "blank" || body.Template != "" {
+		sendError(fmt.Errorf("invalid provider setup mode"))
+		return
+	}
 
 	ownerID := GetUserIDFromContext(c)
 	workspaceID := GetWorkspaceIDFromContext(c)
+	var configErr error
+	var configType int32
 
 	switch typeParam {
 	case "sms":
-		if body.SmsBodySchema != nil && strings.TrimSpace(*body.SmsBodySchema) != "" && !json.Valid([]byte(*body.SmsBodySchema)) {
-			c = ContextWithError(c, "SMS body schema must be valid JSON")
-			w.Create(c)
+		if err := validateSMSForm(body.SmsURL, body.SmsMethod, body.SmsBodySchema, body.SmsBodyEncoding, body.SmsAuthType, body.SmsAuthUsername, body.SmsAccountSID, body.SmsSender); err != nil {
+			sendError(err)
 			return
 		}
-		if body.SmsURL == nil || body.SmsMethod == nil {
-			c = ContextWithError(c, "SMS URL and method are required")
-			w.Create(c)
+		if body.SmsAuthType == "basic" && (body.SmsAuthTokenValue == nil || strings.TrimSpace(*body.SmsAuthTokenValue) == "") {
+			sendError(fmt.Errorf("HTTP Basic password is required"))
 			return
 		}
-		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 0, body.Name)
-		sendError(err)
-		err = w.ProviderService.CreateSmsConfig(workspaceID, provider.ID, ownerID, *body.SmsURL, int32(*body.SmsMethod), body.SmsAuthTokenKey, body.SmsAuthTokenValue, body.SmsIsAuthInHeader, body.SmsBodySchema)
-		sendError(err)
-		break
+		configType = 0
 	case "email":
-		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 1, body.Name)
-		sendError(err)
-		err = w.ProviderService.CreateEmailConfig(workspaceID, provider.ID, ownerID, *body.SMTPHost, *body.SMTPPort, *body.FromEmail, body.Username, body.Password)
-		sendError(err)
+		if body.SMTPHost == nil || strings.TrimSpace(*body.SMTPHost) == "" || body.SMTPPort == nil || *body.SMTPPort < 1 || body.FromEmail == nil || strings.TrimSpace(*body.FromEmail) == "" {
+			sendError(fmt.Errorf("SMTP host, a valid port, and sender email are required"))
+			return
+		}
+		configType = 1
 	case "telegram":
-		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 2, body.Name)
-		sendError(err)
-		err = w.ProviderService.CreateTelegramConfig(workspaceID, provider.ID, ownerID, *body.BotToken)
-		sendError(err)
+		if body.BotToken == nil || strings.TrimSpace(*body.BotToken) == "" {
+			sendError(fmt.Errorf("Telegram bot token is required"))
+			return
+		}
+		configType = 2
 	case "slack":
-		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 3, body.Name)
-		sendError(err)
-		err = w.ProviderService.CreateSlackConfig(workspaceID, provider.ID, ownerID, *body.WebhookUrl)
-		sendError(err)
+		if body.WebhookUrl == nil || strings.TrimSpace(*body.WebhookUrl) == "" {
+			sendError(fmt.Errorf("Slack webhook URL is required"))
+			return
+		}
+		configType = 3
 	case "webhook":
-		provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, 4, body.Name)
+		if body.WebhookURL == nil || strings.TrimSpace(*body.WebhookURL) == "" {
+			sendError(fmt.Errorf("webhook URL is required"))
+			return
+		}
+		configType = 4
+	}
+
+	provider, err := w.ProviderService.CreateProvider(workspaceID, ownerID, configType, strings.TrimSpace(body.Name), body.Priority, body.Weight)
+	if err != nil {
 		sendError(err)
-		err = w.ProviderService.CreateWebhookConfig(workspaceID, provider.ID, ownerID, *body.WebhookURL)
-		sendError(err)
+		return
+	}
+	switch configType {
+	case 0:
+		configErr = w.ProviderService.CreateSmsConfig(workspaceID, provider.ID, ownerID, *body.SmsURL, int32(*body.SmsMethod), body.SmsAuthTokenKey, body.SmsAuthTokenValue, body.SmsIsAuthInHeader, body.SmsBodySchema, body.SmsBodyEncoding, body.SmsAuthType, body.SmsAuthUsername, body.SmsAccountSID, body.SmsSender)
+	case 1:
+		configErr = w.ProviderService.CreateEmailConfig(workspaceID, provider.ID, ownerID, *body.SMTPHost, *body.SMTPPort, *body.FromEmail, body.Username, body.Password)
+	case 2:
+		configErr = w.ProviderService.CreateTelegramConfig(workspaceID, provider.ID, ownerID, *body.BotToken)
+	case 3:
+		configErr = w.ProviderService.CreateSlackConfig(workspaceID, provider.ID, ownerID, *body.WebhookUrl)
+	case 4:
+		configErr = w.ProviderService.CreateWebhookConfig(workspaceID, provider.ID, ownerID, *body.WebhookURL)
+	}
+	if configErr != nil {
+		_ = w.ProviderService.DeleteProvider(provider.ID)
+		sendError(configErr)
+		return
 	}
 
 	c.Redirect(http.StatusFound, "/dashboard/providers")
@@ -226,7 +375,9 @@ func (w ProviderHandler) Edit(c *gin.Context) {
 
 func (w ProviderHandler) Update(c *gin.Context) {
 	var body struct {
-		Name string `form:"name"`
+		Name     string `form:"name"`
+		Priority int64  `form:"priority"`
+		Weight   int64  `form:"weight"`
 		// Sms Input
 		SmsURL            *string `form:"sms_url"`
 		SmsMethod         *int    `form:"sms_method"`
@@ -234,6 +385,11 @@ func (w ProviderHandler) Update(c *gin.Context) {
 		SmsAuthTokenValue *string `form:"sms_auth_token_value"`
 		SmsIsAuthInHeader *bool   `form:"sms_is_auth_in_header,default=false"`
 		SmsBodySchema     *string `form:"sms_body_schema"`
+		SmsBodyEncoding   string  `form:"sms_body_encoding"`
+		SmsAuthType       string  `form:"sms_auth_type"`
+		SmsAuthUsername   *string `form:"sms_auth_username"`
+		SmsAccountSID     *string `form:"sms_account_sid"`
+		SmsSender         *string `form:"sms_sender"`
 
 		// Email Input
 		SMTPHost  *string `form:"smtp_host"`
@@ -256,7 +412,7 @@ func (w ProviderHandler) Update(c *gin.Context) {
 	sendError := func(err error) {
 		if err != nil {
 			c = ContextWithError(c, err.Error())
-			w.Create(c)
+			w.Edit(c)
 			c.Abort()
 			return
 		}
@@ -273,6 +429,15 @@ func (w ProviderHandler) Update(c *gin.Context) {
 	if err != nil {
 		return
 	}
+	if body.SmsBodyEncoding == "" {
+		body.SmsBodyEncoding = "json"
+	}
+	if body.SmsAuthType == "" {
+		body.SmsAuthType = "token"
+	}
+	body.SmsAuthUsername = optionalTrimmed(body.SmsAuthUsername)
+	body.SmsAccountSID = optionalTrimmed(body.SmsAccountSID)
+	body.SmsSender = optionalTrimmed(body.SmsSender)
 
 	providerID, err := ConvertToInt64(providerIDParam)
 	sendError(err)
@@ -286,37 +451,87 @@ func (w ProviderHandler) Update(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
+	if strings.TrimSpace(body.Name) == "" || body.Priority < 0 || body.Priority > 2147483647 || body.Weight < 1 || body.Weight > 1000 {
+		c = ContextWithError(c, "Provider name is required; priority must be non-negative and weight must be between 1 and 1000")
+		w.Edit(c)
+		return
+	}
+	validationError := ""
+	switch provider.ConfigType {
+	case 0:
+		if err := validateSMSForm(body.SmsURL, body.SmsMethod, body.SmsBodySchema, body.SmsBodyEncoding, body.SmsAuthType, body.SmsAuthUsername, body.SmsAccountSID, body.SmsSender); err != nil {
+			validationError = err.Error()
+		} else {
+			currentSMS, configErr := w.ProviderService.GetSmsConfig(provider.ID)
+			if configErr != nil {
+				sendError(configErr)
+				return
+			}
+			if currentSMS.AuthType != body.SmsAuthType && (body.SmsAuthTokenValue == nil || strings.TrimSpace(*body.SmsAuthTokenValue) == "") {
+				validationError = "enter a new credential when changing the SMS authentication type"
+			}
+		}
+	case 1:
+		if body.SMTPHost == nil || strings.TrimSpace(*body.SMTPHost) == "" || body.SMTPPort == nil || *body.SMTPPort < 1 || body.FromEmail == nil || strings.TrimSpace(*body.FromEmail) == "" {
+			validationError = "SMTP host, a valid port, and sender email are required"
+		}
+	case 2:
+		if body.BotToken == nil || strings.TrimSpace(*body.BotToken) == "" {
+			validationError = "Telegram bot token is required"
+		}
+	case 3:
+		if body.SlackWebhookUrl == nil || strings.TrimSpace(*body.SlackWebhookUrl) == "" {
+			validationError = "Slack webhook URL is required"
+		}
+	case 4:
+		if body.WebhookURL == nil || strings.TrimSpace(*body.WebhookURL) == "" {
+			validationError = "webhook URL is required"
+		}
+	}
+	if validationError != "" {
+		c = ContextWithError(c, validationError)
+		w.Edit(c)
+		return
+	}
 
-	err = w.ProviderService.UpdateProvider(providerID, body.Name)
+	err = w.ProviderService.UpdateProvider(providerID, strings.TrimSpace(body.Name), body.Priority, body.Weight)
 	sendError(err)
+	if err != nil {
+		return
+	}
 
 	switch provider.ConfigType {
 	case 0:
-		if body.SmsBodySchema != nil && strings.TrimSpace(*body.SmsBodySchema) != "" && !json.Valid([]byte(*body.SmsBodySchema)) {
-			c = ContextWithError(c, "SMS body schema must be valid JSON")
-			w.Edit(c)
-			return
-		}
-		if body.SmsURL == nil || body.SmsMethod == nil {
-			c = ContextWithError(c, "SMS URL and method are required")
-			w.Edit(c)
-			return
-		}
-		err = w.ProviderService.UpdateSmsConfig(provider.ID, *body.SmsURL, int32(*body.SmsMethod), body.SmsAuthTokenKey, body.SmsAuthTokenValue, body.SmsIsAuthInHeader, body.SmsBodySchema)
+		err = w.ProviderService.UpdateSmsConfig(provider.ID, *body.SmsURL, int32(*body.SmsMethod), body.SmsAuthTokenKey, body.SmsAuthTokenValue, body.SmsIsAuthInHeader, body.SmsBodySchema, body.SmsBodyEncoding, body.SmsAuthType, body.SmsAuthUsername, body.SmsAccountSID, body.SmsSender)
 		sendError(err)
+		if err != nil {
+			return
+		}
 		break
 	case 1:
 		err = w.ProviderService.UpdateEmailConfig(provider.ID, *body.SMTPHost, *body.SMTPPort, body.Username, body.Password, *body.FromEmail)
 		sendError(err)
+		if err != nil {
+			return
+		}
 	case 2:
 		err = w.ProviderService.UpdateTelegramConfig(provider.ID, *body.BotToken)
 		sendError(err)
+		if err != nil {
+			return
+		}
 	case 3:
 		err = w.ProviderService.UpdateSlackConfig(provider.ID, *body.SlackWebhookUrl)
 		sendError(err)
+		if err != nil {
+			return
+		}
 	case 4:
 		err = w.ProviderService.UpdateWebhookConfig(provider.ID, *body.WebhookURL)
 		sendError(err)
+		if err != nil {
+			return
+		}
 	}
 	message := fmt.Sprintf("%s provider updated", ToTitle(GetConfigTypeLabel(provider.ConfigType)))
 	c = ContextWithMessage(c, message)

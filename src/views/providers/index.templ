@@ -37,6 +37,6 @@ templ Index(providerList []sqlc.Provider, page components.PageData) {
 	return row[header]
 }
 		}}
-		@components.Table(providers, []string{"ID", "Name", "ConfigType"}, actions, resolver, page)
+		@components.Table(providers, []string{"ID", "Name", "ConfigType", "Priority", "Weight"}, actions, resolver, page)
 	}
 }

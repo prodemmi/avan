@@ -7,6 +7,7 @@ import (
 	"avan/internal/repositories"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -26,6 +27,8 @@ type MessageService struct {
 	ProviderService              ProviderService
 }
 
+var ErrIdempotencyKeyConflict = errors.New("idempotency key was already used with a different request")
+
 func (w MessageService) GetMessages(page int32, workspaceID int64, providerID *int64, templateID *int64, recipient *string, content *string, status *int16) ([]sqlc.Message, error) {
 	ctx := context.Background()
 	key := w.MessageCache.GetKey("messages", workspaceID, providerID, templateID, status)
@@ -40,6 +43,10 @@ func (w MessageService) GetMessage(messageID int64) (sqlc.Message, error) {
 	return w.MessageCache.GetOrSet(key, time.Second*5, func() (sqlc.Message, error) {
 		return w.Repo.GetMessage(ctx, messageID)
 	})
+}
+
+func (w MessageService) GetMessageForWorkspace(messageID, workspaceID int64) (sqlc.GetMessageStatusForWorkspacePostgresqlRow, error) {
+	return w.Repo.GetMessageForWorkspace(context.Background(), messageID, workspaceID)
 }
 
 func (w MessageService) MessageCount(workspaceID int64, providerID *int64, templateID *int64, recipient *string, content *string, status *int16) (int64, error) {
@@ -110,38 +117,43 @@ func (w MessageService) CreateMessage(workspaceID, providerID int64, templateID 
 	return w.Repo.CreateMessage(ctx, workspaceID, providerID, templateID, recipient, content, status, error, retry, scheduleAt, sentAt, payload)
 }
 
-func (w MessageService) ProduceMessage(workspaceID, providerID int64, templateID *int64, recipient, content string, retry bool, scheduleAt *time.Time, payload *string) error {
-	var status int8
-	status = 1
+func (w MessageService) CreateIdempotentMessage(workspaceID, providerID int64, templateID *int64, recipient, content string, retry bool, scheduleAt *time.Time, payload *string, idempotencyKey, requestHash string) (sqlc.Message, bool, error) {
+	const status = int8(1)
+	message, created, err := w.Repo.CreateIdempotentMessage(context.Background(), workspaceID, providerID, templateID, recipient, content, status, retry, scheduleAt, payload, idempotencyKey, requestHash)
+	if err != nil {
+		return sqlc.Message{}, false, err
+	}
+	if !created {
+		if !message.RequestHash.Valid || message.RequestHash.String != requestHash {
+			return message, false, ErrIdempotencyKeyConflict
+		}
+		return message, false, nil
+	}
+	key := w.MessageCache.GetKey("messages", workspaceID, providerID, templateID, status)
+	_ = w.MessageCache.Delete(w.MessageCache.GetStringKey(key)...)
+	return message, true, nil
+}
 
+func (w MessageService) ProduceMessage(workspaceID, providerID int64, templateID *int64, recipient, content string, retry bool, scheduleAt *time.Time, payload *string, idempotencyKey, requestHash string) (sqlc.Message, bool, error) {
 	now := time.Now()
 	if scheduleAt != nil && !scheduleAt.After(now) {
 		scheduleAt = nil
 	}
-	id, err := w.CreateMessage(workspaceID, providerID, templateID, recipient, content, status, nil, retry, scheduleAt, nil, payload)
+	message, created, err := w.CreateIdempotentMessage(workspaceID, providerID, templateID, recipient, content, retry, scheduleAt, payload, idempotencyKey, requestHash)
 	if err != nil {
-		return err
+		return message, false, err
 	}
-
-	message := sqlc.Message{
-		ID:          id,
-		WorkspaceID: workspaceID,
-		ProviderID:  providerID,
-		TemplateID:  templateID,
-		Recipient:   recipient,
-		Content:     content,
-		Status:      int64(status),
-		Retry:       retry,
-		ScheduleAt:  scheduleAt,
-		Payload:     payload,
-		CreatedAt:   &now,
-		UpdatedAt:   &now,
+	if !created {
+		return message, false, nil
 	}
-
-	if scheduleAt != nil {
-		return nil
+	if message.ScheduleAt != nil {
+		return message, true, nil
 	}
-	return w.enqueueMessage(message)
+	if err := w.enqueueMessage(message); err != nil {
+		_ = w.MarkMessageAsError(message.ID)
+		return message, true, err
+	}
+	return message, true, nil
 }
 
 func (w MessageService) EnqueueDueScheduledMessages(ctx context.Context) error {

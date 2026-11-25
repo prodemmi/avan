@@ -27,9 +27,19 @@ func ApiKeyMiddleware(apiKeyService services.ApiKeyService, workspaceService ser
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired API key"})
 			return
 		}
+		policy, err := workspaceService.GetAPISecurityPolicy(workspace.ID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "workspace security policy is invalid or unavailable"})
+			return
+		}
+		if !policy.Allows(c.ClientIP(), apiKey.ID) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "request rejected by workspace security policy"})
+			return
+		}
 
 		ctx := context.WithValue(c.Request.Context(), "workspace", workspace)
 		c.Set("workspace", workspace)
+		c.Set("api_key", apiKey)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()

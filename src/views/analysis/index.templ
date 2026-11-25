@@ -176,6 +176,20 @@ templ Index(data AnalysisData) {
 		const series = data.TimeDistribution || {};
 		const providers = Object.keys(series);
 		const buckets = [...new Set(providers.flatMap(provider => (series[provider] || []).map(row => row.time_bucket)))].sort();
+		const rangeDays = (Date.parse(`${data.EndDate}T00:00:00Z`) - Date.parse(`${data.StartDate}T00:00:00Z`)) / 86400000;
+		const bucketOptions = rangeDays > 365
+			? { year: "numeric", month: "short" }
+			: rangeDays > 30
+				? { year: "numeric", month: "short", day: "numeric" }
+				: { year: "numeric", month: "short", day: "numeric", hour: "2-digit" };
+		const formatBuckets = (language) => {
+			const locale = language === "fa" ? "fa-IR-u-ca-persian" : "en-US-u-ca-gregory";
+			const formatter = new Intl.DateTimeFormat(locale, { ...bucketOptions, timeZone: "UTC" });
+			return buckets.map(bucket => {
+				const date = new Date(`${bucket.replace(" ", "T")}Z`);
+				return Number.isNaN(date.getTime()) ? bucket : formatter.format(date);
+			});
+		};
 		const colors = ['#76558e', '#6e8e59', '#c47d55', '#5485a0', '#b75b6d'];
 		const datasets = providers.map((provider, i) => ({
 			label: provider,
@@ -183,10 +197,10 @@ templ Index(data AnalysisData) {
 			backgroundColor: colors[i % colors.length]
 		}));
 
-		new Chart(timeCtx, {
+		const timeChart = new Chart(timeCtx, {
 			type: 'bar',
 			data: {
-				labels: buckets,
+				labels: formatBuckets(document.documentElement.lang),
 				datasets: datasets
 			},
 			options: {
@@ -194,6 +208,10 @@ templ Index(data AnalysisData) {
 					y: { beginAtZero: true }
 				}
 			}
+		});
+		document.addEventListener("avan-language-changed", () => {
+			timeChart.data.labels = formatBuckets(document.documentElement.lang);
+			timeChart.update();
 		});
 
 		// Providers Pie Chart

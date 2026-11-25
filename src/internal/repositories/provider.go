@@ -17,10 +17,12 @@ func (w ProviderRepository) GetProvider(ctx context.Context, providerID int64) (
 	return w.Base.DB.Queries.GetProviderPostgresql(ctx, providerID)
 }
 
-func (w ProviderRepository) UpdateProvider(ctx context.Context, providerID int64, name string) error {
+func (w ProviderRepository) UpdateProvider(ctx context.Context, providerID int64, name string, priority, weight int64) error {
 	return w.Base.DB.Queries.UpdateProviderPostgresql(ctx, sqlc.UpdateProviderPostgresqlParams{
-		ID:   providerID,
-		Name: name,
+		ID:       providerID,
+		Name:     name,
+		Priority: priority,
+		Weight:   weight,
 	})
 }
 
@@ -48,7 +50,7 @@ func (w ProviderRepository) GetWebhookConfig(ctx context.Context, providerID int
 	return w.Base.DB.Queries.GetWebhookConfigPostgresql(ctx, providerID)
 }
 
-func (w ProviderRepository) UpdateSmsConfig(ctx context.Context, providerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string) error {
+func (w ProviderRepository) UpdateSmsConfig(ctx context.Context, providerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string, bodyEncoding, authType string, authUsername, accountSID, sender *string) error {
 	return w.Base.DB.Queries.UpdateSmsConfigPostgresql(ctx, sqlc.UpdateSmsConfigPostgresqlParams{
 		ProviderID:     providerID,
 		Url:            url,
@@ -57,6 +59,11 @@ func (w ProviderRepository) UpdateSmsConfig(ctx context.Context, providerID int6
 		Column5:        authTokenValue,
 		IsAuthInHeader: isAuthInHeader,
 		BodySchema:     bodySchema,
+		BodyEncoding:   bodyEncoding,
+		AuthType:       authType,
+		AuthUsername:   authUsername,
+		AccountSid:     accountSID,
+		Sender:         sender,
 	})
 }
 
@@ -99,7 +106,7 @@ func (w ProviderRepository) UpdateWebhookConfig(ctx context.Context, providerID 
 	})
 }
 
-func (w ProviderRepository) CreateSmsConfig(ctx context.Context, workspaceID int64, providerID int64, ownerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string) error {
+func (w ProviderRepository) CreateSmsConfig(ctx context.Context, workspaceID int64, providerID int64, ownerID int64, url string, method int32, authTokenKey, authTokenValue *string, isAuthInHeader *bool, bodySchema *string, bodyEncoding, authType string, authUsername, accountSID, sender *string) error {
 	return w.Base.DB.Queries.CreateSmsConfigPostgresql(ctx, sqlc.CreateSmsConfigPostgresqlParams{
 		WorkspaceID:    workspaceID,
 		ProviderID:     providerID,
@@ -110,6 +117,11 @@ func (w ProviderRepository) CreateSmsConfig(ctx context.Context, workspaceID int
 		AuthTokenValue: authTokenValue,
 		IsAuthInHeader: isAuthInHeader,
 		BodySchema:     bodySchema,
+		BodyEncoding:   bodyEncoding,
+		AuthType:       authType,
+		AuthUsername:   authUsername,
+		AccountSid:     accountSID,
+		Sender:         sender,
 	})
 }
 
@@ -162,12 +174,14 @@ func (w ProviderRepository) CreateWebhookConfig(ctx context.Context, workspaceID
 	})
 }
 
-func (w ProviderRepository) CreateProvider(ctx context.Context, workspaceID int64, ownerID int64, configType int32, name string) (sqlc.Provider, error) {
+func (w ProviderRepository) CreateProvider(ctx context.Context, workspaceID int64, ownerID int64, configType int32, name string, priority, weight int64) (sqlc.Provider, error) {
 	return w.Base.DB.Queries.CreateProviderPostgresql(ctx, sqlc.CreateProviderPostgresqlParams{
 		WorkspaceID: workspaceID,
 		OwnerID:     ownerID,
 		ConfigType:  int64(configType),
 		Name:        name,
+		Priority:    priority,
+		Weight:      weight,
 	})
 }
 
