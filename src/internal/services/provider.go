@@ -5,6 +5,7 @@ import (
 	"avan/internal/redis"
 	"avan/internal/repositories"
 	"context"
+	"strings"
 	"time"
 )
 
@@ -33,6 +34,36 @@ func (w ProviderService) GetProvider(providerID int64) (sqlc.Provider, error) {
 	return w.ProviderCache.GetOrSet(key, time.Hour*24, func() (sqlc.Provider, error) {
 		return w.Repo.GetProvider(ctx, providerID)
 	})
+}
+
+func (w ProviderService) GetProviderSecurityPolicy(providerID int64) (SecurityPolicy, error) {
+	provider, err := w.GetProvider(providerID)
+	if err != nil {
+		return SecurityPolicy{}, err
+	}
+	return ParseSecurityPolicy(provider.SecurityPolicy)
+}
+
+func (w ProviderService) GetProviderSecurityPolicyJSON(providerID int64) (string, error) {
+	provider, err := w.GetProvider(providerID)
+	return provider.SecurityPolicy, err
+}
+
+func (w ProviderService) UpdateProviderSecurityPolicy(workspaceID, providerID int64, value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		value = "{}"
+	}
+	if _, err := ParseSecurityPolicy(value); err != nil {
+		return err
+	}
+	if err := w.Repo.UpdateSecurityPolicy(context.Background(), workspaceID, providerID, value); err != nil {
+		return err
+	}
+	key := w.ProviderCache.GetStringKey("provider", providerID)
+	_ = w.ProviderCache.Delete(key...)
+	w.invalidateProviders(workspaceID)
+	return nil
 }
 
 func (w ProviderService) UpdateProvider(providerID int64, name string, priority, weight int64) error {

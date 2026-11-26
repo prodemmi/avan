@@ -12,9 +12,9 @@ import (
 
 const getProviderStatsPostgresql = `-- name: GetProviderStatsPostgresql :one
 SELECT COUNT(*) AS total,
-       COUNT(*) FILTER (WHERE status = 0) AS success,
+       COUNT(*) FILTER (WHERE status IN (0, 3, 4)) AS success,
        COUNT(*) FILTER (WHERE status = 2) AS failed,
-       COALESCE(COUNT(*) FILTER (WHERE status = 0) * 100.0 / NULLIF(COUNT(*), 0), 0)::float8 AS success_rate,
+       COALESCE(COUNT(*) FILTER (WHERE status IN (0, 3, 4)) * 100.0 / NULLIF(COUNT(*), 0), 0)::float8 AS success_rate,
        COALESCE(COUNT(*) FILTER (WHERE status = 2) * 100.0 / NULLIF(COUNT(*), 0), 0)::float8 AS error_rate,
        COALESCE(AVG(EXTRACT(EPOCH FROM sent_at - created_at)), 0)::float8 AS avg_send_time
 FROM messages
@@ -114,9 +114,9 @@ func (q *Queries) GetTimeDistributionPostgresql(ctx context.Context, arg GetTime
 
 const messageSummaryPostgresql = `-- name: MessageSummaryPostgresql :one
 SELECT COUNT(*) AS total_messages,
-       COUNT(*) FILTER (WHERE status = 0) AS success_messages,
+       COUNT(*) FILTER (WHERE status IN (0, 3, 4)) AS success_messages,
        COUNT(*) FILTER (WHERE status = 2) AS failed_messages,
-       COALESCE(COUNT(*) FILTER (WHERE status = 0) * 100.0 / NULLIF(COUNT(*), 0), 0)::float8 AS success_rate,
+       COALESCE(COUNT(*) FILTER (WHERE status IN (0, 3, 4)) * 100.0 / NULLIF(COUNT(*), 0), 0)::float8 AS success_rate,
        COALESCE(COUNT(*) FILTER (WHERE status = 2) * 100.0 / NULLIF(COUNT(*), 0), 0)::float8 AS error_rate,
        COALESCE(AVG(EXTRACT(EPOCH FROM sent_at - created_at)), 0)::float8 AS avg_send_time
 FROM messages

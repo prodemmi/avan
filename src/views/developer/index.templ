@@ -124,7 +124,8 @@ templ Index(workspaces []sqlc.Workspace, selected sqlc.Workspace, providers []sq
 		</section>
 		<section>
 			<h2 class="text-lg font-semibold">Message inquiry</h2>
-			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300"><code>GET /api/messages/&#123;id&#125;</code> returns the latest status and timestamps for a message in the API key's workspace. Current statuses are <code>pending</code>, <code>scheduled</code>, <code>sent</code>, and <code>failed</code>. Delivery and read receipts are not available until a provider callback is configured.</p>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300"><code>GET /api/messages/&#123;id&#125;</code> returns the latest status and timestamps for a message in the API key's workspace. Statuses include <code>pending</code>, <code>scheduled</code>, <code>sent</code>, <code>delivered</code>, <code>failed</code>, and <code>read</code>. A provider integration can report delivery/read receipts using the status endpoint.</p>
+			<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Use <code>POST /api/messages/&#123;id&#125;/status</code> with <code>&#123;&quot;status&quot;:&quot;delivered&quot;&#125;</code> or <code>&#123;&quot;status&quot;:&quot;read&quot;&#125;</code> to record a receipt. Events must follow the message lifecycle; repeated events are safe.</p>
 		</section>
 		<section>
 			<h2 class="text-lg font-semibold">Interactive API reference</h2>

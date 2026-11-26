@@ -1496,13 +1496,15 @@ html[dir="rtl"] #swagger-ui .response-col_description {
 .provider-cancel-button,
 .provider-save-button {
     display: inline-flex;
-    min-height: 42px;
+    min-width: 64px;
+    height: 40px;
+    min-height: 40px;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 0 17px;
+    padding: 0 16px;
     border: 1px solid #e3dfe8;
-    border-radius: 10px;
+    border-radius: 6px;
     font-size: 13px;
     font-weight: 700;
     text-decoration: none;
@@ -1734,4 +1736,16 @@ html[lang="fa"] .admin-workspace strong {
     .dashboard-grid {
         grid-template-columns: 1fr;
     }
+}
+
+#swagger-ui {
+    color-scheme: light;
+}
+
+#swagger-ui,
+#swagger-ui *,
+#swagger-ui *::before,
+#swagger-ui *::after {
+    animation: none !important;
+    transition: none !important;
 }

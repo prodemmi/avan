@@ -13,5 +13,6 @@ func (r Router) GenerateApiRoutes(engine *gin.Engine) {
 		api.POST("/send", r.ApiHandler.Send)
 		api.POST("/quick-send", r.ApiHandler.QuickSend)
 		api.GET("/messages/:id", r.ApiHandler.Inquiry)
+		api.POST("/messages/:id/status", r.ApiHandler.ReportStatus)
 	}
 }

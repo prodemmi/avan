@@ -44,7 +44,7 @@ INSERT INTO providers (workspace_id, app_id, owner_id, config_type, name, priori
 SELECT $1, apps.id, $2, $3, $4, $5, $6
 FROM apps
 WHERE apps.workspace_id = $1 AND apps.name = 'Default'
-RETURNING id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight
+RETURNING id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight, security_policy
 `
 
 type CreateProviderPostgresqlParams struct {
@@ -77,6 +77,7 @@ func (q *Queries) CreateProviderPostgresql(ctx context.Context, arg CreateProvid
 		&i.AppID,
 		&i.Priority,
 		&i.Weight,
+		&i.SecurityPolicy,
 	)
 	return i, err
 }
@@ -234,7 +235,7 @@ func (q *Queries) GetEmailConfigPostgresql(ctx context.Context, providerID int64
 }
 
 const getProviderByNamePostgresql = `-- name: GetProviderByNamePostgresql :one
-SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight FROM providers
+SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight, security_policy FROM providers
 WHERE name = $1
 `
 
@@ -252,12 +253,13 @@ func (q *Queries) GetProviderByNamePostgresql(ctx context.Context, name string) 
 		&i.AppID,
 		&i.Priority,
 		&i.Weight,
+		&i.SecurityPolicy,
 	)
 	return i, err
 }
 
 const getProviderPostgresql = `-- name: GetProviderPostgresql :one
-SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight FROM providers
+SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight, security_policy FROM providers
 WHERE id = $1
 `
 
@@ -275,6 +277,7 @@ func (q *Queries) GetProviderPostgresql(ctx context.Context, id int64) (Provider
 		&i.AppID,
 		&i.Priority,
 		&i.Weight,
+		&i.SecurityPolicy,
 	)
 	return i, err
 }
@@ -370,7 +373,7 @@ func (q *Queries) GetWebhookConfigPostgresql(ctx context.Context, providerID int
 }
 
 const listProvidersPostgresql = `-- name: ListProvidersPostgresql :many
-SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight FROM providers
+SELECT id, workspace_id, owner_id, config_type, name, created_at, updated_at, app_id, priority, weight, security_policy FROM providers
 WHERE workspace_id = $1
 ORDER BY created_at DESC
 `
@@ -395,6 +398,7 @@ func (q *Queries) ListProvidersPostgresql(ctx context.Context, workspaceID int64
 			&i.AppID,
 			&i.Priority,
 			&i.Weight,
+			&i.SecurityPolicy,
 		); err != nil {
 			return nil, err
 		}

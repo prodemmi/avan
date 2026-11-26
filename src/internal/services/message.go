@@ -28,6 +28,7 @@ type MessageService struct {
 }
 
 var ErrIdempotencyKeyConflict = errors.New("idempotency key was already used with a different request")
+var ErrInvalidMessageStatusTransition = errors.New("message status transition is not allowed")
 
 func (w MessageService) GetMessages(page int32, workspaceID int64, providerID *int64, templateID *int64, recipient *string, content *string, status *int16) ([]sqlc.Message, error) {
 	ctx := context.Background()
@@ -47,6 +48,18 @@ func (w MessageService) GetMessage(messageID int64) (sqlc.Message, error) {
 
 func (w MessageService) GetMessageForWorkspace(messageID, workspaceID int64) (sqlc.GetMessageStatusForWorkspacePostgresqlRow, error) {
 	return w.Repo.GetMessageForWorkspace(context.Background(), messageID, workspaceID)
+}
+
+func (w MessageService) ReportMessageStatus(messageID, workspaceID, status int64) error {
+	updated, err := w.Repo.UpdateStatusForWorkspace(context.Background(), messageID, workspaceID, status)
+	if err != nil {
+		return err
+	}
+	if updated == 0 {
+		return ErrInvalidMessageStatusTransition
+	}
+	key := w.MessageCache.GetStringKey("message", messageID)
+	return w.MessageCache.Delete(key...)
 }
 
 func (w MessageService) MessageCount(workspaceID int64, providerID *int64, templateID *int64, recipient *string, content *string, status *int16) (int64, error) {

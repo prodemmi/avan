@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-templ Edit(provider sqlc.Provider, configType string, config interface{}) {
+templ Edit(provider sqlc.Provider, configType string, config interface{}, securityPolicy string) {
 	<div class="provider-form-page">
 		<a class="provider-back-link" href="/dashboard/providers/">← Back to providers</a>
 		<div class="provider-form-heading">
@@ -39,6 +39,14 @@ templ Edit(provider sqlc.Provider, configType string, config interface{}) {
 					case "webhook":
 						@edit_config_forms.WebhookForm(config.(sqlc.WebhookConfig))
 				}
+			</section>
+			<section class="provider-form-card">
+				<div class="provider-form-section-heading"><span class="provider-form-step"><i class="ri-shield-check-line" aria-hidden="true"></i></span><div><h2>Provider API security</h2><p>Optional restrictions are combined with this workspace’s API security policy.</p></div></div>
+				<div class="provider-field provider-field-wide">
+					<label for="security_policy">Security policy (JSON)</label>
+					@components.Textarea("security_policy", `{"ip_allowlist":["203.0.113.0/24"],"api_key_allowlist":[12]}`, securityPolicy)
+					<p>Use <code>ip_allowlist</code> and <code>api_key_allowlist</code>. Empty lists add no restriction.</p>
+				</div>
 			</section>
 			<div class="provider-form-actions">
 				<a class="provider-cancel-button" href="/dashboard/providers/">Cancel</a>

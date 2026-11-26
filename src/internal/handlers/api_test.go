@@ -23,6 +23,8 @@ func TestMessageStatusName(t *testing.T) {
 		{name: "scheduled", status: 1, scheduleAt: &scheduleAt, want: "scheduled"},
 		{name: "sent", status: 0, want: "sent"},
 		{name: "failed", status: 2, want: "failed"},
+		{name: "delivered", status: 3, want: "delivered"},
+		{name: "read", status: 4, want: "read"},
 		{name: "unknown", status: 99, want: "unknown"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -30,6 +32,25 @@ func TestMessageStatusName(t *testing.T) {
 				t.Fatalf("messageStatusName() = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestReportedMessageStatus(t *testing.T) {
+	for _, test := range []struct {
+		value string
+		want  int64
+		valid bool
+	}{
+		{value: " SENT ", want: 0, valid: true},
+		{value: "delivered", want: 3, valid: true},
+		{value: "failed", want: 2, valid: true},
+		{value: "read", want: 4, valid: true},
+		{value: "pending", valid: false},
+	} {
+		got, valid := reportedMessageStatus(test.value)
+		if got != test.want || valid != test.valid {
+			t.Errorf("reportedMessageStatus(%q) = (%d, %t), want (%d, %t)", test.value, got, valid, test.want, test.valid)
+		}
 	}
 }
 

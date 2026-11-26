@@ -3,7 +3,9 @@ package components
 import (
 	"avan/internal/table"
 	"fmt"
+	"html"
 	"reflect"
+	"time"
 )
 
 type TableResolve func(row map[string]any, header string) any
@@ -13,6 +15,15 @@ type TableAction func(map[string]any) (string, string, string)
 func GetValue(value any) string {
 	if value == nil {
 		return ""
+	}
+	if date, ok := value.(time.Time); ok {
+		return localizedDateTime(date)
+	}
+	if date, ok := value.(*time.Time); ok {
+		if date == nil {
+			return ""
+		}
+		return localizedDateTime(*date)
 	}
 
 	v := reflect.ValueOf(value)
@@ -40,6 +51,10 @@ func GetValue(value any) string {
 	default:
 		return fmt.Sprintf("%v", v.Interface())
 	}
+}
+
+func localizedDateTime(date time.Time) string {
+	return fmt.Sprintf(`<time data-localized-date-time datetime="%s">%s</time>`, html.EscapeString(date.Format(time.RFC3339Nano)), html.EscapeString(date.Format(time.RFC822)))
 }
 
 templ Table(rows []map[string]any, headers []string, actions []TableAction, resolver TableResolve, page PageData) {

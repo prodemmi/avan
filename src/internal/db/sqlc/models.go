@@ -78,16 +78,17 @@ type Permission struct {
 }
 
 type Provider struct {
-	ID          int64      `db:"id" json:"id"`
-	WorkspaceID int64      `db:"workspace_id" json:"workspace_id"`
-	OwnerID     int64      `db:"owner_id" json:"owner_id"`
-	ConfigType  int64      `db:"config_type" json:"config_type"`
-	Name        string     `db:"name" json:"name"`
-	CreatedAt   *time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at"`
-	AppID       int64      `db:"app_id" json:"app_id"`
-	Priority    int64      `db:"priority" json:"priority"`
-	Weight      int64      `db:"weight" json:"weight"`
+	ID             int64      `db:"id" json:"id"`
+	WorkspaceID    int64      `db:"workspace_id" json:"workspace_id"`
+	OwnerID        int64      `db:"owner_id" json:"owner_id"`
+	ConfigType     int64      `db:"config_type" json:"config_type"`
+	Name           string     `db:"name" json:"name"`
+	CreatedAt      *time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt      *time.Time `db:"updated_at" json:"updated_at"`
+	AppID          int64      `db:"app_id" json:"app_id"`
+	Priority       int64      `db:"priority" json:"priority"`
+	Weight         int64      `db:"weight" json:"weight"`
+	SecurityPolicy string     `db:"security_policy" json:"security_policy"`
 }
 
 type Role struct {

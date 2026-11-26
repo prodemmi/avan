@@ -3,6 +3,7 @@ package repositories
 import (
 	"avan/internal/db/sqlc"
 	"context"
+	"database/sql"
 )
 
 type ProviderRepository struct {
@@ -15,6 +16,21 @@ func (w ProviderRepository) ListProviders(ctx context.Context, workspaceID int64
 
 func (w ProviderRepository) GetProvider(ctx context.Context, providerID int64) (sqlc.Provider, error) {
 	return w.Base.DB.Queries.GetProviderPostgresql(ctx, providerID)
+}
+
+func (w ProviderRepository) UpdateSecurityPolicy(ctx context.Context, workspaceID, providerID int64, policy string) error {
+	result, err := w.Base.DB.DB.ExecContext(ctx, `UPDATE providers SET security_policy = $3 WHERE id = $1 AND workspace_id = $2`, providerID, workspaceID, policy)
+	if err != nil {
+		return err
+	}
+	updated, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if updated == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (w ProviderRepository) UpdateProvider(ctx context.Context, providerID int64, name string, priority, weight int64) error {

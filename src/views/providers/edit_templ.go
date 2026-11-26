@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-func Edit(provider sqlc.Provider, configType string, config interface{}) templ.Component {
+func Edit(provider sqlc.Provider, configType string, config interface{}, securityPolicy string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -128,7 +128,15 @@ func Edit(provider sqlc.Provider, configType string, config interface{}) templ.C
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</section><div class=\"provider-form-actions\"><a class=\"provider-cancel-button\" href=\"/dashboard/providers/\">Cancel</a> <button class=\"provider-save-button\" type=\"submit\"><i class=\"ri-check-line\" aria-hidden=\"true\"></i>Save changes</button></div></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</section><section class=\"provider-form-card\"><div class=\"provider-form-section-heading\"><span class=\"provider-form-step\"><i class=\"ri-shield-check-line\" aria-hidden=\"true\"></i></span><div><h2>Provider API security</h2><p>Optional restrictions are combined with this workspace’s API security policy.</p></div></div><div class=\"provider-field provider-field-wide\"><label for=\"security_policy\">Security policy (JSON)</label>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.Textarea("security_policy", `{"ip_allowlist":["203.0.113.0/24"],"api_key_allowlist":[12]}`, securityPolicy).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<p>Use <code>ip_allowlist</code> and <code>api_key_allowlist</code>. Empty lists add no restriction.</p></div></section><div class=\"provider-form-actions\"><a class=\"provider-cancel-button\" href=\"/dashboard/providers/\">Cancel</a> <button class=\"provider-save-button\" type=\"submit\"><i class=\"ri-check-line\" aria-hidden=\"true\"></i>Save changes</button></div></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

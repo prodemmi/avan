@@ -51,6 +51,7 @@ ALTER TABLE providers
     ADD COLUMN priority INTEGER NOT NULL DEFAULT 0 CHECK (priority >= 0),
     ADD COLUMN weight INTEGER NOT NULL DEFAULT 1 CHECK (weight BETWEEN 1 AND 1000);
 
+-- +goose StatementBegin
 CREATE FUNCTION create_workspace_business() RETURNS trigger AS $$
 BEGIN
     IF NEW.business_id IS NULL THEN
@@ -61,17 +62,20 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
 CREATE TRIGGER workspaces_create_business
 BEFORE INSERT ON workspaces
 FOR EACH ROW EXECUTE FUNCTION create_workspace_business();
 
+-- +goose StatementBegin
 CREATE FUNCTION create_workspace_default_app() RETURNS trigger AS $$
 BEGIN
     INSERT INTO apps (workspace_id, name) VALUES (NEW.id, 'Default');
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
 CREATE TRIGGER workspaces_create_default_app
 AFTER INSERT ON workspaces

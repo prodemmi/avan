@@ -12,7 +12,9 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"avan/internal/table"
 	"fmt"
+	"html"
 	"reflect"
+	"time"
 )
 
 type TableResolve func(row map[string]any, header string) any
@@ -22,6 +24,15 @@ type TableAction func(map[string]any) (string, string, string)
 func GetValue(value any) string {
 	if value == nil {
 		return ""
+	}
+	if date, ok := value.(time.Time); ok {
+		return localizedDateTime(date)
+	}
+	if date, ok := value.(*time.Time); ok {
+		if date == nil {
+			return ""
+		}
+		return localizedDateTime(*date)
 	}
 
 	v := reflect.ValueOf(value)
@@ -49,6 +60,10 @@ func GetValue(value any) string {
 	default:
 		return fmt.Sprintf("%v", v.Interface())
 	}
+}
+
+func localizedDateTime(date time.Time) string {
+	return fmt.Sprintf(`<time data-localized-date-time datetime="%s">%s</time>`, html.EscapeString(date.Format(time.RFC3339Nano)), html.EscapeString(date.Format(time.RFC822)))
 }
 
 func Table(rows []map[string]any, headers []string, actions []TableAction, resolver TableResolve, page PageData) templ.Component {
@@ -80,7 +95,7 @@ func Table(rows []map[string]any, headers []string, actions []TableAction, resol
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(table.ToTitleCase(header))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components/table.templ`, Line: 51, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components/table.templ`, Line: 66, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -142,7 +157,7 @@ func Table(rows []map[string]any, headers []string, actions []TableAction, resol
 						var templ_7745c5c3_Var3 string
 						templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.URL(url)).ResolveURL(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components/table.templ`, Line: 75, Col: 39}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components/table.templ`, Line: 90, Col: 39}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 						if templ_7745c5c3_Err != nil {
@@ -155,7 +170,7 @@ func Table(rows []map[string]any, headers []string, actions []TableAction, resol
 						var templ_7745c5c3_Var4 string
 						templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(method).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components/table.templ`, Line: 75, Col: 57}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components/table.templ`, Line: 90, Col: 57}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 						if templ_7745c5c3_Err != nil {
@@ -168,7 +183,7 @@ func Table(rows []map[string]any, headers []string, actions []TableAction, resol
 						var templ_7745c5c3_Var5 string
 						templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components/table.templ`, Line: 77, Col: 18}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components/table.templ`, Line: 92, Col: 18}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 						if templ_7745c5c3_Err != nil {

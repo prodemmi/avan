@@ -181,7 +181,7 @@ func (r Router) developerOpenAPI(c *gin.Context) {
 				"202": response("Message is pending or scheduled. Duplicate requests return the existing state and message ID without sending again.", success, gin.H{"data": gin.H{"message_id": 123, "status": "pending", "duplicate": true}}),
 				"400": response("Malformed JSON, missing fields/message, invalid template data, or missing Idempotency-Key.", failure, gin.H{"error": "a valid Idempotency-Key header is required"}),
 				"401": response("Missing, invalid, or expired API key.", failure, gin.H{"error": "invalid or expired API key"}),
-				"403": response("Workspace IP or API-key policy denied the request.", failure, gin.H{"error": "request rejected by workspace security policy"}),
+				"403": response("Workspace or provider IP/API-key policy denied the request.", failure, gin.H{"error": "request rejected by security policy"}),
 				"409": response("The Idempotency-Key was already used with a different request.", failure, gin.H{"error": "idempotency key was already used with a different request"}),
 				"502": response("The existing idempotent message has failed; it will not be sent again by replaying this key.", success, gin.H{"data": gin.H{"message_id": 123, "status": "failed", "duplicate": true}}),
 				"500": response("Provider, database, or queue failure.", failure, gin.H{"error": "description"}),
@@ -192,10 +192,26 @@ func (r Router) developerOpenAPI(c *gin.Context) {
 		"security":   []gin.H{{"ApiKey": []string{}}},
 		"parameters": []gin.H{{"name": "id", "in": "path", "required": true, "schema": gin.H{"type": "integer", "format": "int64"}}},
 		"responses": gin.H{
-			"200": response("Workspace-scoped message lifecycle status. This service reports pending, scheduled, sent, or failed; delivered/read are unavailable without provider callbacks.", success, gin.H{"data": gin.H{"id": 123, "status": "sent", "created_at": "2026-12-01T09:30:00Z", "sent_at": "2026-12-01T09:30:02Z"}}),
+			"200": response("Workspace-scoped message lifecycle status, including provider delivery/read receipts.", success, gin.H{"data": gin.H{"id": 123, "status": "delivered", "created_at": "2026-12-01T09:30:00Z", "sent_at": "2026-12-01T09:30:02Z", "updated_at": "2026-12-01T09:30:04Z"}}),
 			"401": response("Missing, invalid, or expired API key.", failure, gin.H{"error": "invalid or expired API key"}),
-			"403": response("Workspace IP or API-key policy denied the request.", failure, gin.H{"error": "request rejected by workspace security policy"}),
+			"403": response("Workspace or provider IP/API-key policy denied the request.", failure, gin.H{"error": "request rejected by security policy"}),
 			"404": response("Message does not exist in the API key's workspace.", failure, gin.H{"error": "message not found"}),
+		},
+	}
+	statusOperation := gin.H{
+		"security":   []gin.H{{"ApiKey": []string{}}},
+		"parameters": []gin.H{{"name": "id", "in": "path", "required": true, "schema": gin.H{"type": "integer", "format": "int64"}}},
+		"requestBody": gin.H{"required": true, "content": gin.H{"application/json": gin.H{
+			"schema":  gin.H{"type": "object", "required": []string{"status"}, "properties": gin.H{"status": gin.H{"type": "string", "enum": []string{"sent", "delivered", "failed", "read"}}}},
+			"example": gin.H{"status": "delivered"},
+		}}},
+		"responses": gin.H{
+			"200": response("Message status recorded.", success, gin.H{"data": gin.H{"id": 123, "status": "delivered"}}),
+			"400": response("Invalid message ID or status.", failure, gin.H{"error": "status must be sent, delivered, failed, or read"}),
+			"401": response("Missing, invalid, or expired API key.", failure, gin.H{"error": "invalid or expired API key"}),
+			"403": response("Workspace or provider security policy denied the request.", failure, gin.H{"error": "request rejected by security policy"}),
+			"404": response("Message does not exist in the API key's workspace.", failure, gin.H{"error": "message not found"}),
+			"409": response("The reported event is not a valid lifecycle transition.", failure, gin.H{"error": "message status transition is not allowed"}),
 		},
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -203,10 +219,11 @@ func (r Router) developerOpenAPI(c *gin.Context) {
 		"info":    gin.H{"title": "Avan API", "version": "1.0.0", "description": fmt.Sprintf("API reference for workspace %s using provider %s (ID %d).", selected.Name, selectedProvider.Name, selectedProvider.ID)},
 		"servers": []gin.H{{"url": "/"}},
 		"paths": gin.H{
-			"/api/send":          gin.H{"post": messageOperation(false)},
-			"/api/quick-send":    gin.H{"post": messageOperation(true)},
-			"/api/messages/{id}": gin.H{"get": inquiryOperation},
-			"/health":            gin.H{"get": gin.H{"summary": "Service health", "responses": gin.H{"200": response("Service is running.", gin.H{"type": "object", "properties": gin.H{"status": gin.H{"type": "string"}}}, gin.H{"status": "ok"})}}},
+			"/api/send":                 gin.H{"post": messageOperation(false)},
+			"/api/quick-send":           gin.H{"post": messageOperation(true)},
+			"/api/messages/{id}":        gin.H{"get": inquiryOperation},
+			"/api/messages/{id}/status": gin.H{"post": statusOperation},
+			"/health":                   gin.H{"get": gin.H{"summary": "Service health", "responses": gin.H{"200": response("Service is running.", gin.H{"type": "object", "properties": gin.H{"status": gin.H{"type": "string"}}}, gin.H{"status": "ok"})}}},
 		},
 		"components": gin.H{
 			"securitySchemes": gin.H{"ApiKey": gin.H{"type": "apiKey", "in": "header", "name": "X-API-KEY"}},

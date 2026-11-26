@@ -197,7 +197,7 @@ func (q *Queries) GetMessagePostgresql(ctx context.Context, id int64) (Message, 
 }
 
 const getMessageStatusForWorkspacePostgresql = `-- name: GetMessageStatusForWorkspacePostgresql :one
-SELECT id, status, schedule_at, sent_at, created_at FROM messages
+SELECT id, provider_id, status, schedule_at, sent_at, created_at, updated_at FROM messages
 WHERE id = $1 AND workspace_id = $2
 LIMIT 1
 `
@@ -209,10 +209,12 @@ type GetMessageStatusForWorkspacePostgresqlParams struct {
 
 type GetMessageStatusForWorkspacePostgresqlRow struct {
 	ID         int64      `db:"id" json:"id"`
+	ProviderID int64      `db:"provider_id" json:"provider_id"`
 	Status     int64      `db:"status" json:"status"`
 	ScheduleAt *time.Time `db:"schedule_at" json:"schedule_at"`
 	SentAt     *time.Time `db:"sent_at" json:"sent_at"`
 	CreatedAt  *time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt  *time.Time `db:"updated_at" json:"updated_at"`
 }
 
 func (q *Queries) GetMessageStatusForWorkspacePostgresql(ctx context.Context, arg GetMessageStatusForWorkspacePostgresqlParams) (GetMessageStatusForWorkspacePostgresqlRow, error) {
@@ -220,10 +222,12 @@ func (q *Queries) GetMessageStatusForWorkspacePostgresql(ctx context.Context, ar
 	var i GetMessageStatusForWorkspacePostgresqlRow
 	err := row.Scan(
 		&i.ID,
+		&i.ProviderID,
 		&i.Status,
 		&i.ScheduleAt,
 		&i.SentAt,
 		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -338,8 +342,43 @@ func (q *Queries) UpdateMessageSentAtPostgresql(ctx context.Context, arg UpdateM
 	return err
 }
 
+const updateMessageStatusForWorkspacePostgresql = `-- name: UpdateMessageStatusForWorkspacePostgresql :execrows
+UPDATE messages
+SET status = $3,
+    sent_at = CASE WHEN $3 IN (0, 3, 4) AND sent_at IS NULL THEN CURRENT_TIMESTAMP ELSE sent_at END,
+    schedule_at = CASE WHEN $3 IN (0, 3, 4) THEN NULL ELSE schedule_at END,
+    error = CASE WHEN $3 IN (0, 3, 4) THEN NULL ELSE error END,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND workspace_id = $2
+  AND (status = $3
+       OR ($3 = 0 AND status = 1 AND schedule_at IS NULL)
+       OR ($3 = 2 AND (status = 0 OR (status = 1 AND schedule_at IS NULL)))
+       OR ($3 = 3 AND (status IN (0, 2) OR (status = 1 AND schedule_at IS NULL)))
+       OR ($3 = 4 AND status = 3))
+`
+
+type UpdateMessageStatusForWorkspacePostgresqlParams struct {
+	ID          int64 `db:"id" json:"id"`
+	WorkspaceID int64 `db:"workspace_id" json:"workspace_id"`
+	Status      int64 `db:"status" json:"status"`
+}
+
+func (q *Queries) UpdateMessageStatusForWorkspacePostgresql(ctx context.Context, arg UpdateMessageStatusForWorkspacePostgresqlParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, updateMessageStatusForWorkspacePostgresql, arg.ID, arg.WorkspaceID, arg.Status)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const updateMessageStatusPostgresql = `-- name: UpdateMessageStatusPostgresql :exec
-UPDATE messages SET status = $2 WHERE id = $1
+UPDATE messages
+SET status = $2
+WHERE id = $1
+  AND (status = $2
+       OR ($2 = 0 AND status = 1 AND schedule_at IS NULL)
+       OR ($2 = 1 AND status = 1)
+       OR ($2 = 2 AND status = 1 AND schedule_at IS NULL))
 `
 
 type UpdateMessageStatusPostgresqlParams struct {

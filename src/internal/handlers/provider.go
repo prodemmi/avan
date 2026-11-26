@@ -363,8 +363,10 @@ func (w ProviderHandler) Edit(c *gin.Context) {
 		break
 	}
 	sendIfError(configErr)
+	securityPolicy, err := w.ProviderService.GetProviderSecurityPolicyJSON(provider.ID)
+	sendIfError(err)
 
-	defaultContent := providers.Edit(provider, configType, config)
+	defaultContent := providers.Edit(provider, configType, config, securityPolicy)
 	var items []layout.MenuItem
 	base := layout.Layout(defaultContent, "", items)
 	err = base.Render(c.Request.Context(), c.Writer)
@@ -375,9 +377,10 @@ func (w ProviderHandler) Edit(c *gin.Context) {
 
 func (w ProviderHandler) Update(c *gin.Context) {
 	var body struct {
-		Name     string `form:"name"`
-		Priority int64  `form:"priority"`
-		Weight   int64  `form:"weight"`
+		Name           string `form:"name"`
+		Priority       int64  `form:"priority"`
+		Weight         int64  `form:"weight"`
+		SecurityPolicy string `form:"security_policy"`
 		// Sms Input
 		SmsURL            *string `form:"sms_url"`
 		SmsMethod         *int    `form:"sms_method"`
@@ -456,6 +459,11 @@ func (w ProviderHandler) Update(c *gin.Context) {
 		w.Edit(c)
 		return
 	}
+	if _, err := services.ParseSecurityPolicy(body.SecurityPolicy); err != nil {
+		c = ContextWithError(c, err.Error())
+		w.Edit(c)
+		return
+	}
 	validationError := ""
 	switch provider.ConfigType {
 	case 0:
@@ -497,6 +505,10 @@ func (w ProviderHandler) Update(c *gin.Context) {
 	err = w.ProviderService.UpdateProvider(providerID, strings.TrimSpace(body.Name), body.Priority, body.Weight)
 	sendError(err)
 	if err != nil {
+		return
+	}
+	if err = w.ProviderService.UpdateProviderSecurityPolicy(provider.WorkspaceID, provider.ID, body.SecurityPolicy); err != nil {
+		sendError(err)
 		return
 	}
 

@@ -111,6 +111,14 @@ func (w MessageRepository) GetMessageForWorkspace(ctx context.Context, messageID
 	})
 }
 
+func (w MessageRepository) UpdateStatusForWorkspace(ctx context.Context, messageID, workspaceID, status int64) (int64, error) {
+	return w.Base.DB.Queries.UpdateMessageStatusForWorkspacePostgresql(ctx, sqlc.UpdateMessageStatusForWorkspacePostgresqlParams{
+		ID:          messageID,
+		WorkspaceID: workspaceID,
+		Status:      status,
+	})
+}
+
 func (w MessageRepository) GetTimeDistribution(ctx context.Context, workspaceID, providerID int64, startDate, endDate *time.Time) ([]sqlc.GetTimeDistributionPostgresqlRow, error) {
 	return w.Base.DB.Queries.GetTimeDistributionPostgresql(ctx, sqlc.GetTimeDistributionPostgresqlParams{
 		WorkspaceID: workspaceID,

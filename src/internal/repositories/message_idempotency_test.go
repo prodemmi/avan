@@ -147,4 +147,27 @@ func TestConcurrentIdempotencyClaimAndWorkspaceScope(t *testing.T) {
 	if _, err := sqlc.New(connections[0]).GetMessageStatusForWorkspacePostgresql(ctx, sqlc.GetMessageStatusForWorkspacePostgresqlParams{ID: winnerID, WorkspaceID: 12}); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("cross-workspace inquiry error = %v, want sql.ErrNoRows", err)
 	}
+
+	queries := sqlc.New(connections[0])
+	if updated, err := queries.UpdateMessageStatusForWorkspacePostgresql(ctx, sqlc.UpdateMessageStatusForWorkspacePostgresqlParams{ID: winnerID, WorkspaceID: 11, Status: 0}); err != nil || updated != 0 {
+		t.Fatalf("scheduled message sent-status update = (%d, %v), want no update", updated, err)
+	}
+	if _, err := connections[0].ExecContext(ctx, "UPDATE messages SET schedule_at = NULL WHERE id = $1", winnerID); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct {
+		value int64
+		want  int64
+	}{{value: 3, want: 1}, {value: 0, want: 0}, {value: 4, want: 1}, {value: 2, want: 0}} {
+		updated, err := queries.UpdateMessageStatusForWorkspacePostgresql(ctx, sqlc.UpdateMessageStatusForWorkspacePostgresqlParams{ID: winnerID, WorkspaceID: 11, Status: status.value})
+		if err != nil || updated != status.want {
+			t.Fatalf("status %d update = (%d, %v), want %d rows", status.value, updated, err, status.want)
+		}
+	}
+	if _, err := connections[0].ExecContext(ctx, "UPDATE messages SET status = 2 WHERE id = $1", winnerID); err != nil {
+		t.Fatal(err)
+	}
+	if updated, err := queries.UpdateMessageStatusForWorkspacePostgresql(ctx, sqlc.UpdateMessageStatusForWorkspacePostgresqlParams{ID: winnerID, WorkspaceID: 11, Status: 3}); err != nil || updated != 1 {
+		t.Fatalf("late delivery receipt after timeout failure = (%d, %v), want one update", updated, err)
+	}
 }

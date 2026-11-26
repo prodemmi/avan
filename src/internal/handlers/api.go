@@ -61,6 +61,9 @@ func (a ApiHandler) Send(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "provider not found in this workspace"})
 		return
 	}
+	if !a.providerPolicyAllows(c, provider.ID) {
+		return
+	}
 	if hasTemplate {
 		template, err := a.MessageService.TemplateService.GetTemplate(*body.TemplateID)
 		if err != nil || template.WorkspaceID != workspaceID {
@@ -123,6 +126,9 @@ func (a ApiHandler) QuickSend(c *gin.Context) {
 	provider, err := a.ProviderService.GetProvider(body.ProviderID)
 	if err != nil || provider.WorkspaceID != workspaceID {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "provider not found in this workspace"})
+		return
+	}
+	if !a.providerPolicyAllows(c, provider.ID) {
 		return
 	}
 	if hasTemplate {
@@ -223,13 +229,92 @@ func (a ApiHandler) Inquiry(c *gin.Context) {
 		SendError(c, err)
 		return
 	}
+	if !a.providerPolicyAllows(c, message.ProviderID) {
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{
 		"id":           message.ID,
 		"status":       messageStatusName(message.Status, message.ScheduleAt),
 		"created_at":   message.CreatedAt,
 		"scheduled_at": message.ScheduleAt,
 		"sent_at":      message.SentAt,
+		"updated_at":   message.UpdatedAt,
 	}})
+}
+
+func (a ApiHandler) ReportStatus(c *gin.Context) {
+	messageID, err := ConvertToInt64(c.Param("id"))
+	if err != nil || messageID <= 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid message ID"})
+		return
+	}
+	var body struct {
+		Status string `json:"status" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "status is required"})
+		return
+	}
+	status, ok := reportedMessageStatus(body.Status)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "status must be sent, delivered, failed, or read"})
+		return
+	}
+	workspaceID := GetWorkspaceIDFromContext(c)
+	message, err := a.MessageService.GetMessageForWorkspace(messageID, workspaceID)
+	if errors.Is(err, sql.ErrNoRows) {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "message not found"})
+		return
+	}
+	if err != nil {
+		SendError(c, err)
+		return
+	}
+	if !a.providerPolicyAllows(c, message.ProviderID) {
+		return
+	}
+	if err := a.MessageService.ReportMessageStatus(messageID, workspaceID, status); errors.Is(err, services.ErrInvalidMessageStatusTransition) {
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": err.Error()})
+		return
+	} else if err != nil {
+		SendError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"id": messageID, "status": messageStatusName(status, nil)}})
+}
+
+func (a ApiHandler) providerPolicyAllows(c *gin.Context, providerID int64) bool {
+	policy, err := a.ProviderService.GetProviderSecurityPolicy(providerID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "provider security policy is invalid or unavailable"})
+		return false
+	}
+	value, exists := c.Get("api_key")
+	apiKey, ok := value.(sqlc.ApiKey)
+	if !exists || !ok {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired API key"})
+		return false
+	}
+	if !policy.Allows(c.ClientIP(), apiKey.ID) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "request rejected by provider security policy"})
+		return false
+	}
+	return true
+}
+
+func reportedMessageStatus(value string) (int64, bool) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "sent":
+		return 0, true
+	case "failed":
+		return 2, true
+	case "delivered":
+		return 3, true
+	case "read":
+		return 4, true
+	default:
+		return 0, false
+	}
 }
 
 func requestIdempotencyKey(c *gin.Context) (string, bool) {
@@ -279,6 +364,10 @@ func messageStatusName(status int64, scheduleAt *time.Time) string {
 		return "pending"
 	case 2:
 		return "failed"
+	case 3:
+		return "delivered"
+	case 4:
+		return "read"
 	default:
 		return "unknown"
 	}

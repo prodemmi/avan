@@ -7,6 +7,7 @@ sql:
       - "internal/db/migrations/postgresql/004_provider_hierarchy_and_routing.sql"
       - "internal/db/migrations/postgresql/005_sms_request_modes.sql"
       - "internal/db/migrations/postgresql/006_phase3_reliability.sql"
+      - "internal/db/migrations/postgresql/007_provider_security_policy.sql"
     queries: "internal/db/queries/postgresql/"
     engine: "postgresql"
     gen:
