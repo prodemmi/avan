@@ -10,7 +10,7 @@ x-app-environment: &app-environment
   REDIS_HOST: redis
   REDIS_PORT: 6379
   REDIS_DB: 0
-  CONSUMER_COUNT: ${CONSUMER_COUNT:-2}
+  CONSUMER_COUNT: ${CONSUMER_COUNT:-1}
   SERVER_PORT: 8083
   SERVER_DOMAIN: notification.layra.local:8083
   GOSSIP_HOST: server:7947
@@ -94,7 +94,7 @@ services:
       <<: *app-dependencies
       server:
         condition: service_healthy
-    scale: ${CONSUMER_COUNT:-2}
+    scale: ${CONSUMER_COUNT:-1}
 
 volumes:
   postgres_data:

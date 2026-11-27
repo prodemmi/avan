@@ -1,62 +1,24 @@
-# Product Requirements Document: Messaging Service Enhancement (Phased)
-
-## Phase 1: UI/UX Standardization & Admin Experience
-**Objective:** Improve the administrative interface consistency, usability, and layout efficiency.
-
-### 1.1 Design System & Component Consistency
-* **Typography:** Implement `IRANSans` font for all administrative panels and UI components.
-* **Button Standardization:** Apply a strict Material Design system. All action buttons must have standardized dimensions and consistent padding/scaling.
-* **Localization & Date Handling:** 
-    * Implement dynamic date formatting: Use `Jalali` (Persian) calendar when the locale is `fa` and `Gregorian` when the locale is `en`.
-* **Swagger Documentation:** Standardize the Swagger UI. Disable theme-switching and animations to maintain the default Swagger color palette for stability.
-
-### 1.2 Admin Interface Overhaul
-* **User Management:** 
-    * Deprecate the "inline edit" pattern in user tables.
-    * Implement a **Side Drawer (Slide-out)** pattern from the left/right for editing user details to maintain context.
-* **Workspace Context:** 
-    * Add a **Workspace Selector** component in the Global Admin Header to allow switching between different business contexts/workspaces.
-* **Role Management:** 
-    * Allow the removal of custom-defined roles. 
-    * *Constraint:* System-default/Primary roles must remain immutable.
-
----
-
-## Phase 2: Provider Configuration & Management
-**Objective:** Re-engineer the Provider lifecycle and introduce advanced routing capabilities.
-
-### 2.1 Provider Entity Refactoring
-* **Domain Re-modeling:** Refactor the hierarchy from `Workspace -> Provider` to a more robust `Business -> Workspace -> App -> Provider` model to support multi-tenant complexity.
-* **Dynamic Configuration UI:** 
-    * Replace static forms with dynamic input dependency logic. 
-    * Input fields must reactively appear/disappear based on the selected Provider type or specific settings.
-
-### 2.2 Provider Onboarding Wizard
-Implement a multi-step Wizard for provider creation with two modes: **Blank Configuration** or **Template-based Configuration**.
-* **Template Library:** 
-    * **Local Providers:** Pre-configured templates for Iranian services (e.g., Kavenegar, Melipayamak, etc.).
-    * **Global Providers:** Pre-configured templates for international services (e.g., Twilio, SendGrid, Slack, Webhooks).
-* **Requirement:** Templates must include default required fields (API Keys, Sender IDs, Endpoint URLs) extracted from official developer documentation.
-
-### 2.3 Advanced Provider Routing (Load Balancer)
-Implement a **Provider Load Balancer** system to manage multi-provider redundancy and cost optimization.
-* **Strategy Support:**
-    * **Priority/Weight-based:** Route traffic based on user-defined cost-efficiency (e.g., use the cheapest provider first).
-    * **Failover:** Automatically switch to the next provider in the priority list if the primary provider returns a failure/timeout.
-    * *Note:* The architecture must be extensible to support additional strategies (Round Robin, Latency-based) in the future.
-
----
-
-## Phase 3: Core Reliability & API Expansion
-**Objective:** Enhance system robustness and provide deeper visibility for business clients.
-
-### 3.1 Reliability & Security
-* **Idempotency Implementation:** 
-    * Implement an idempotency key mechanism for every "Send Message" request.
-    * Ensure the system detects and ignores duplicate requests with the same key to prevent accidental double-billing/sending.
-* **Granular Security:** 
-    * Introduce a security configuration layer that allows defining unique security policies (IP whitelisting, API Key restrictions) at the **Provider** or **Workspace** level.
-
-### 3.2 API & Observability
-* **Message Inquiry API:** 
-    * Develop a high-performance Inquiry API specifically for business clients to track message status (Sent, Delivered, Failed, Read) in real-time.
+> fix iransans font for dashboard
+> swagger in dev page should be force ltr for each languages and fix colors and backgrounds in dark mode too
+> API Security Policy settings in json inputs are very bad! make them text inputs
+> remove logs directory in settings
+> make API keys per providers (not workspaces)
+> fix api key copy. also show it once in a dialog after creation. it is so secure value.
+> remove multi language, i want persian only
+> fix all date range filters. there is one in analytics page. their place and align are not good. also i want a real persian datetime picker for them.
+> buttons and elements are too big. i want more beautifull design system.
+> remove message templates from system. i think it is in business sides. this system only message sender.
+> i want a pro provider load balancing. currently we have it but i want to able to set wight and provider fallbacks. for example i have 3 sms providers. when i try to send a message with this provider and it got error (use retry in api for example got 3 retry errors), it should resend with fallback sms provider and it should log or saves in db and show in the table that this message got x times error (with save errors) and used y fallback providers.it was an example of sms provider only. consider any providers. in providers page, write two tabs, one providers and other is load balancing, in load balancing page show a graph of loadbalancings and enable to set or edit load balancing system here too.so i want more pro system. currently you show an wight in table and a order in provider edit, it is not pro.
+> encrypy providers secure fields in database
+> show workspaces in header with select box instead of sidebar
+> remove "زمان و تاریخ" in settings and use default
+> remove this api,/api/messages/{id}/status
+> combine /send with /quick-send in one /send api, move quick_send boolean in body.
+> /send should support multi providers. for example emails need title, description, attachments, recipient and ...
+sms only needs recipient and text
+telegram needs description, recipient id and message keyboards (optional)
+> return all data of the message in GET /api/messages/{id}
+> explain all type of providers /send in the swagger and say how to do that.
+> add and show all table detail actions on a left drawer
+> for confirms like delete, show confirm html dialog
+> make dashboard welcome card smaller
